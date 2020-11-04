@@ -1,0 +1,138 @@
+  
+import numpy as np
+import os
+
+isCalcFeat=False
+isFitLinModel=True
+isClassify=False
+isRunMd=False                                   #是否训练运行md  default:False
+isFollowMd=False                                #是否是接续上次的md继续运行  default:False
+
+#************** Dir **********************
+codedir='/ssd/linwang/ALL_ML_CODE/MLcode_MD.9.15.2020/workdir'
+trainSetDir='.'
+fortranFitSourceDir='/ssd/linwang/ALL_ML_CODE/MLcode_MD.9.15.2020/fit'
+#fitModelDir='/ssd/buyu/fit/fread_dfeat'
+fitModelDir='./fread_dfeat'
+genFeatDir='/ssd/linwang/ALL_ML_CODE/MLcode_MD.9.15.2020/gen_feature'
+mdImageFileDir='./md'                              #设置md的初始image的文件所在的文件夹  default:'.'
+
+#isCalcFeat=True
+#isClassify=True
+#isRunMd=True
+
+#********* for gen_feature.in *********************
+atomType=[6,29]  
+maxNeighborNum=150
+numOf2bfeat=24
+numOf3bfeat1=3
+numOf3bfeat2=3
+
+Rcut=5.5
+Rcut2=5.5
+Rm=5.0
+iflag_grid=3                      # 1 or 2 or 3
+fact_base=0.2
+dR1=0.5 
+dR2=0.5 
+E_tolerance=0.3
+iflag_ftype=4                      # 2 or 3 or 4 when 4, iflag_grid must be 3
+recalc_grid=1                      # 0:read from file or 1: recalc 
+#----------------------------------------------------
+rMin=0.0
+#************** cluster input **********************
+kernel_type=2             # 1 is exp(-(dd/width)**alpha), 2 is 1/(dd**alpha+k_dist0**alpha)
+use_lpp=True
+lppNewNum=3               # new feature num lpp generate. you can adjust more lpp parameters by editing feat_LPP.py. also see explains in it
+lpp_n_neighbors=6         
+lpp_weight='adjacency'    # 'adjacency' or 'heat'
+lpp_weight_width=1.0
+alpha0=1.0
+k_dist0=0.01                       
+DesignCenter=False
+ClusterNum=[3,3]
+#-----------------------------------------------
+
+#******** for fit.input *******************************
+
+fortranFitAtomRepulsingEnergies=[0.000,0.000]            #fortran fitting时对每种原子设置的排斥能量的大小，此值必须设置，无default值！(list_like)
+fortranFitAtomRadii=[0.35,1.4]                        #fortran fitting时对每种原子设置的半径大小，此值必须设置，无default值！(list_like)
+fortranFitWeightOfEnergy=0.9                    #fortran fitting时最后fit时各个原子能量所占的权重(linear和grr公用参数)  default:0.9
+fortranFitWeightOfEtot=0.0                      #fortran fitting时最后fit时Image总能量所占的权重(linear和grr公用参数)  default:0.0
+fortranFitWeightOfForce=0.1                     #fortran fitting时最后fit时各个原子所受力所占的权重(linear和grr公用参数)  default:0.1
+fortranFitRidgePenaltyTerm=0.0001               #fortran fitting时最后岭回归时所加的对角penalty项的大小(linear和grr公用参数)  default:0.0001
+#----------------------------------------------------
+
+#*********************** for MD **********************
+
+#以下部分为md设置的参数 
+mdCalcModel='lin'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'clst'
+mdRunModel='npt'                                #md运行时的模型,'nve' or 'nvt', default:'nve'
+mdStepNum=1000                                  #md运行的步数,default:1000
+mdStepTime=0.2                                  #md运行时一步的时长(fs), default:1.0
+mdStartTemperature=300                          #md运行时的初始温度
+mdEndTemperature=300                            #md运行采用'nvt'模型时，稳定温度
+mdNvtTaut=0.1*1000                               #md运行采用'nvt'模型时，Berendsen温度对的时间常数
+
+isTrajAppend=False                              #traj文件是否采用新文件还是接续上次的文件  default:False
+isNewMovementAppend=False                       #md输出的movement文件是采用新文件还是接续上次的文件  default:False
+mdTrajIntervalStepNum=50
+mdLogIntervalStepNum=50
+mdNewMovementIntervalStepNum=50
+mdStartImageIndex=0                             #若初始image文件为MOVEMENT,初始的image的编号  default:0
+
+isOnTheFlyMd=False                              #是否采用on-the-fly md,暂时还不起作用  default:False
+isFixedMaxNeighborNumForMd=False                #是否使用固定的maxNeighborNum值，默认为default,若为True，应设置mdMaxNeighborNum的值
+mdMaxNeighborNum=None                           #采用固定的maxNeighborNum值时，所应该采用的maxNeighborNum值(目前此功能不可用)
+
+isMdCheckVar=False                               #若采用 'grr' model时，是否计算var  default:False
+isReDistribute=True                             #md运行时是否重新分配初速度，目前只是重新分配, default:True
+velocityDistributionModel='MaxwellBoltzmann'    #md运行时,重新分配初速度的方案,目前只有'MaxwellBoltzmann',default:MaxwellBoltzmann
+
+isMdProfile=False
+
+#-------------------------------------------------------
+
+
+#************* no need to edit ****************************
+#fortranFitAtomTypeNum=0                        #fortran fitting时原子所属种类数目(linear和grr公用参数)  default:0(废弃，不需要)
+fortranFitFeatNum0=None                         #fortran fitting时输入的feat的数目(linear和grr公用参数)  default:None
+fortranFitFeatNum2=None                         #fortran fitting时PCA之后使用的feat的数目(linear和grr公用参数)  此值目前已经不需要设置
+isDynamicFortranFitRidgePenaltyTerm=False       #fortran fitting时最后岭回归时所加的对角penalty项的大小是否根据PCA最小的奇异值调整 default:False
+fortranGrrRefNum=[800,1000]                           #fortran grr fitting时每种原子所采用的ref points数目,若设置应为类数组   default:None
+fortranGrrRefNumRate=0.1                        #fortran grr fitting时每种原子选择ref points数目所占总case数目的比率   default:0.1
+fortranGrrRefMinNum=1000                        #fortran grr fitting时每种原子选择ref points数目的下限数目，若case数低于此数，则为case数
+fortranGrrRefMaxNum=3000                        #fortran grr fitting时每种原子选择ref points数目的上限数目，若设定为None，则无上限(不建议)
+fortranGrrKernelAlpha=1                         #fortran grr fitting时kernel所用超参数alpha
+fortranGrrKernalDist0=3.0                       #fortran grr fitting时kernel所用超参数dist0
+realFeatNum=111
+mulFactorVectOf2bFeat=None
+mulFactorVectOf3bFeat1=None
+mulFactorVectOf3bFeat2=None
+#-----------------------------------------------
+
+
+trainSetDir=os.path.abspath(trainSetDir)
+genFeatDir=os.path.abspath(genFeatDir)
+fortranFitSourceDir=os.path.abspath(fortranFitSourceDir)
+fbinListPath=os.path.join(trainSetDir,'location')
+sourceFileList=[]
+InputPath=os.path.abspath('./input/')
+OutputPath=os.path.abspath('./output/')
+GenFeatInputPath=os.path.join('./input/','gen_feature.in')
+fitInputPath=os.path.join(fitModelDir,'fit.input')
+# featCalcInfoPath=os.path.join(trainSetDir,'feat_calc_info.txt')
+
+# featTrainTxt=os.path.join(trainSetDir,'trainData.txt')
+# featTestTxt=os.path.join(trainSetDir,'testData.txt')
+
+if fitModelDir is None:
+    fitModelDir=os.path.join(fortranFitSourceDir,'fread_dfeat')
+else:
+    fitModelDir=os.path.abspath(fitModelDir)
+linModelCalcInfoPath=os.path.join(fitModelDir,'linear_feat_calc_info.txt')
+# grrModelCalcInfoPath=os.path.join(fitModelDir,'gaussion_feat_calc_info.txt')
+# fitInputPath=os.path.join(fitModelDir,'fit.input')
+linFitInputBakPath=os.path.join(fitModelDir,'linear_fit_input.txt')
+# grrFitInputBakPath=os.path.join(fitModelDir,'gaussion_fit_input.txt')
+atomTypeNum=len(atomType)
