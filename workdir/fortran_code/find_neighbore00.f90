@@ -1,18 +1,14 @@
-      subroutine find_neighbore(iatom,natom,xatom,AL,Rc_type,num_neigh,list_neigh, &
-      dR_neigh,iat_neigh,ntype,iat_type,m_neigh,Rc_M,map2neigh_M,list_neigh_M, &
-      num_neigh_M,iat_neigh_M)
-     
+      subroutine find_neighbore00(iatom,natom,xatom,AL,Rc,num_neigh,list_neigh, &
+      dR_neigh,iat_neigh,ntype,iat_type,m_neigh)
       implicit none
       integer natom,ntype
-      real*8 Rc_type(100),Rc_M
+      real*8 Rc
       real*8 xatom(3,natom),AL(3,3)
       integer iatom(natom)
       real*8 dR_neigh(3,m_neigh,ntype,natom)
       integer iat_neigh(m_neigh,ntype,natom),list_neigh(m_neigh,ntype,natom)
-      integer iat_neigh_M(m_neigh,ntype,natom)
-      integer list_neigh_M(m_neigh,ntype,natom),map2neigh_M(m_neigh,ntype,natom)
-      integer num_neigh(ntype,natom),num_neigh_M(ntype,natom)
-      integer num_type(ntype),num_type_M(ntype)
+      integer num_neigh(ntype,natom)
+      integer num_type(ntype)
       integer nperiod(3)
       integer iflag,i,j,num
       integer i1,i2,i3,itype
@@ -24,8 +20,8 @@
       iflag=0
       do i=1,3
       d=dsqrt(AL(1,i)**2+AL(2,i)**2+AL(3,i)**2)
-      nperiod(i)=int(Rc_M/d)+1
-      if(d.lt.2*Rc_M) iflag=1
+      nperiod(i)=int(Rc/d)+1
+      if(d.lt.2*Rc) iflag=1
       enddo
 
 
@@ -49,13 +45,12 @@
       enddo
 
 
-      Rc2=Rc_M**2
+      Rc2=Rc**2
 
       do 2000 i=1,natom
 
       if(iflag.eq.1) then
       num_type=0
-      num_type_M=0
       do  j=1,natom
       do i1=-nperiod(1),nperiod(1)
       do i2=-nperiod(2),nperiod(2)
@@ -69,36 +64,28 @@
       dd=dx**2+dy**2+dz**2
       if(dd.lt.Rc2.and.dd.gt.1.D-8) then
       itype=itype_atom(j)
-      num_type_M(itype)=num_type_M(itype)+1
-        if(num_type_M(itype).gt.m_neigh) then
+      num_type(itype)=num_type(itype)+1
+      if(num_type(itype).gt.m_neigh) then
         write(6,*) "num.gt.m_neigh, stop", m_neigh
         stop
-        endif
-      list_neigh_M(num_type_M(itype),itype,i)=j
-      iat_neigh_M(num_type_M(itype),itype,i)=iatom(j)
-
-      if(dd.lt.Rc_type(itype_atom(i))**2.and.dd.gt.1.D-8) then
-      num_type(itype)=num_type(itype)+1
+      endif
       list_neigh(num_type(itype),itype,i)=j
       iat_neigh(num_type(itype),itype,i)=iatom(j)
-      map2neigh_M(num_type(itype),itype,i)=num_type_M(itype)
       dR_neigh(1,num_type(itype),itype,i)=dx
       dR_neigh(2,num_type(itype),itype,i)=dy
       dR_neigh(3,num_type(itype),itype,i)=dz
-      endif
       endif
       enddo
       enddo
       enddo
       enddo
       num_neigh(:,i)=num_type(:)
-      num_neigh_M(:,i)=num_type_M(:)
       endif
 
+      
 
       if(iflag.eq.0) then
       num_type=0
-      num_type_M=0
       do  j=1,natom
       dx1=xatom(1,j)-xatom(1,i)
       if(abs(dx1+1).lt.abs(dx1)) dx1=dx1+1
@@ -116,33 +103,24 @@
       dd=dx**2+dy**2+dz**2
       if(dd.lt.Rc2.and.dd.gt.1.D-8) then
       itype=itype_atom(j)
-      num_type_M(itype)=num_type_M(itype)+1
-
-        if(num_type_M(itype).gt.m_neigh) then
-        write(6,*) "num.gt.m_neigh, stop",m_neigh
-        stop
-        endif
-      list_neigh_M(num_type_M(itype),itype,i)=j
-      iat_neigh_M(num_type_M(itype),itype,i)=iatom(j)
-
-      if(dd.lt.Rc_type(itype_atom(i))**2.and.dd.gt.1.D-8) then
       num_type(itype)=num_type(itype)+1
 
+      if(num_type(itype).gt.m_neigh) then
+        write(6,*) "num.gt.m_neigh, stop",m_neigh
+        stop
+      endif
       list_neigh(num_type(itype),itype,i)=j
       iat_neigh(num_type(itype),itype,i)=iatom(j)
-      map2neigh_M(num_type(itype),itype,i)=num_type_M(itype)
       dR_neigh(1,num_type(itype),itype,i)=dx
       dR_neigh(2,num_type(itype),itype,i)=dy
       dR_neigh(3,num_type(itype),itype,i)=dz
       endif
-      endif
       enddo
       num_neigh(:,i)=num_type(:)
-      num_neigh_M(:,i)=num_type_M(:)
       endif
 
 2000  continue
       return
-      end subroutine find_neighbore
+      end subroutine find_neighbore00
       
 

@@ -45,15 +45,15 @@ if pm.isCalcFeat:
     command=pm.genFeatDir+"/gen_3b_feature.x > ./output/out2"
     os.system(command)
     pp.movementUsed()
-    pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
-    pp.writeFitInput()
+    # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
+    # pp.writeFitInput()
 else:
     os.system('cp '+os.path.abspath(pm.fbinListPath)+' ./input/')
     pp.writeGenFeatInput()
     pp.collectAllSourceFiles()
     pp.movementUsed()
-    pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
-    pp.writeFitInput()
+    # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
+    # pp.writeFitInput()
 
 if pm.isClassify:
     if os.path.exists(os.path.join(pm.trainSetDir,'lppData.txt')):

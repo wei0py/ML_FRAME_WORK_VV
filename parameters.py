@@ -219,14 +219,14 @@ linFitInputBakPath=os.path.join(fitModelDir,'linear_fit_input.txt')
 
 f_atoms=os.path.join(mdImageFileDir,'atom.config')
 atomTypeNum=len(atomType)
-if os.path.exists(fitInputPath2):
-    with open(fitInputPath2,'r') as sourceFile:
-        sourceFile.readline()
-        line=sourceFile.readline()
-        if len(line) > 1 :
-            realFeatNum=int(line.split(',')[1])
-        else:
-            pass
+# if os.path.exists(fitInputPath2):
+#     with open(fitInputPath2,'r') as sourceFile:
+#         sourceFile.readline()
+#         line=sourceFile.readline()
+#         if len(line) > 1 :
+#             realFeatNum=int(line.split(',')[1])
+#         else:
+#             pass
 nFeats=np.array([realFeatNum,realFeatNum,realFeatNum])
 dir_work = os.path.join(trainSetDir,'NN_output/')          # The major dir that store I/O files and data
 

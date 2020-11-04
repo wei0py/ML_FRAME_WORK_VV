@@ -20,7 +20,7 @@
 <!-- 2. feature num is different now. many points should change -->
 3. now only 2b and 3b, could exists other type? how to define the parameters?
 4. to do md, do I need input all types of features? or just return features and combine them in python. Then input another fortran package
-
+5. there is no output grid for generating features
 
 ## Idea
 1. in md, could return feature2b and feature3b, then feature[:, :nfeat2b]=feature2b, feature[:, nfeat2b:(nfeat2b+nfeat3b)]=nfeat3b

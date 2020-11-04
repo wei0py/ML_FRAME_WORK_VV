@@ -1,11 +1,15 @@
-      subroutine find_feature3(natom,Rc,Rc2,n2b,n3b1,n3b2, &
+      subroutine find_feature_3b_type2(natom,itype_atom,Rc,Rc2,n3b1,n3b2, &
         num_neigh,list_neigh, &
-        dR_neigh,iat_neigh,ntype,grid2t,grid31t,grid32t, &
-        feat_all,dfeat_allR,nfeat0,m_neigh)
+        dR_neigh,iat_neigh,ntype,grid31t,grid32t, &
+        feat_all,dfeat_allR,nfeat0m,m_neigh,n3b1m,n3b2m,nfeat_atom)
       implicit none
-      integer natom,n2b,n3b1,n3b2,ntype
-      integer nfeat0,m_neigh
-      real*8 Rc,Rc2
+      integer ntype
+      integer n3b1m,n3b2m,itype0
+      integer natom,n3b1(ntype),n3b2(ntype)
+      integer nfeat_atom(natom)
+      integer nfeat0m,m_neigh
+      integer itype_atom(natom)
+      real*8 Rc(ntype),Rc2(ntype)
       real*8 dR_neigh(3,m_neigh,ntype,natom)
       real*8 dR_neigh_alltype(3,m_neigh,natom)
       integer iat_neigh(m_neigh,ntype,natom),list_neigh(m_neigh,ntype,natom)
@@ -15,17 +19,13 @@
       integer iflag,i,j,num,iat,itype
       integer i1,i2,i3,itype1,itype2,j1,j2,iat1,iat2
       real*8 d,dx1,dx2,dx3,dx,dy,dz,dd
-      real*8 grid2t(0:n2b+1)
-      real*8 grid31t(0:n3b1+1),grid32t(0:n3b2+1)
-      real*8 grid2(-1:n2b+1)
-      real*8 grid31(-1:n3b1+1),grid32(-1:n3b2+1)
+      real*8 grid31t(0:n3b1m+1,ntype),grid32t(0:n3b2m+1,ntype)
+      real*8 grid31(-1:n3b1m+1,ntype),grid32(-1:n3b2m+1,ntype)
       real*8 pi,pi2,x,f1
       integer iflag_grid
 
-      real*8 feat2(n2b,ntype,natom)
-      real*8 dfeat2(n2b,ntype,natom,m_neigh,3)
-      real*8 feat3(n3b1*n3b1*n3b2,ntype*(ntype+1)/2,natom)
-      real*8 dfeat3(n3b1*n3b1*n3b2,ntype*(ntype+1)/2,natom,m_neigh,3)
+      real*8 feat3(n3b1m*n3b1m*n3b2m,ntype*(ntype+1)/2,natom)
+      real*8 dfeat3(n3b1m*n3b1m*n3b2m,ntype*(ntype+1)/2,natom,m_neigh,3)
 
       real*8 feat3_tmp(3,m_neigh,ntype)
       real*8 dfeat3_tmp(3,m_neigh,ntype,3)
@@ -36,15 +36,15 @@
       integer itype12,ind_f32(3)
       integer ind_all_neigh(m_neigh,ntype,natom),list_neigh_alltype(m_neigh,natom)
 
-      real*8 feat_all(nfeat0,natom),dfeat_allR(nfeat0,natom,m_neigh,3)
-      real*8 dfeat_all(nfeat0,natom,m_neigh,3)
+      real*8 feat_all(nfeat0m,natom),dfeat_allR(nfeat0m,natom,m_neigh,3)
+      real*8 dfeat_all(nfeat0m,natom,m_neigh,3)
 
-      grid2(0:n2b+1)=grid2t(0:n2b+1)
-      grid2(-1)=-grid2t(1)
-      grid31(0:n3b1+1)=grid31t(0:n3b1+1)
-      grid31(-1)=-grid31t(1)
-      grid32(0:n3b2+1)=grid32t(0:n3b2+1)
-      grid32(-1)=-grid32t(1)
+      do itype=1,ntype
+      grid31(0:n3b1(itype)+1,itype)=grid31t(0:n3b1(itype)+1,itype)
+      grid31(-1,itype)=-grid31t(1,itype)
+      grid32(0:n3b2(itype)+1,itype)=grid32t(0:n3b2(itype)+1,itype)
+      grid32(-1,itype)=-grid32t(1,itype)
+      enddo
 
 
       num_neigh_alltype=0
@@ -75,13 +75,12 @@
       pi=4*datan(1.d0)
       pi2=2*pi
 
-      feat2=0.d0
-      dfeat2=0.d0
       feat3=0.d0
       dfeat3=0.d0
 
 
       do 3000 iat=1,natom
+      itype0=itype_atom(iat)
 
 
       do 1000 itype=1,ntype
@@ -92,65 +91,22 @@
       dd=dR_neigh(1,j,itype,iat)**2+dR_neigh(2,j,itype,iat)**2+dR_neigh(3,j,itype,iat)**2
       d=dsqrt(dd)
 
-      do k=1,n2b+1
-      if(grid2(k).ge.d) exit
-      enddo
-      k=k-1
-
-      if(k.gt.n2b)  k=n2b
-!  This point will be in the intervalL [grid2(k),grid2(k+1)]
-!  It will have feature contribution:
-!  feat2(k,itype,iat),feat2(k+1,itype,iat)
-      if(k.le.n2b-2) then   ! k+2 feature
-      x=(d-grid2(k))/(grid2(k+3)-grid2(k))
-      y=(x-0.5d0)*pi2
-      f1=0.5d0*(cos(y)+1)
-      feat2(k+2,itype,iat)=feat2(k+2,itype,iat)+f1
-      y2=-pi*sin(y)/(d*(grid2(k+3)-grid2(k)))
-      dfeat2(k+2,itype,iat,jj,:)=dfeat2(k+2,itype,iat,jj,:)+y2*dR_neigh(:,j,itype,iat)
-      dfeat2(k+2,itype,iat,1,:)=dfeat2(k+2,itype,iat,1,:)-y2*dR_neigh(:,j,itype,iat)
-! Note, (k+1,itype) is the feature inde
-      endif
-
-      if(k.le.n2b-1) then   ! k+1 feature
-      x=(d-grid2(k-1))/(grid2(k+2)-grid2(k-1))
-      y=(x-0.5d0)*pi2
-      f1=0.5d0*(cos(y)+1)
-      feat2(k+1,itype,iat)=feat2(k+1,itype,iat)+f1
-      y2=-pi*sin(y)/(d*(grid2(k+2)-grid2(k-1)))
-      dfeat2(k+1,itype,iat,jj,:)=dfeat2(k+1,itype,iat,jj,:)+y2*dR_neigh(:,j,itype,iat)
-      dfeat2(k+1,itype,iat,1,:)=dfeat2(k+1,itype,iat,1,:)-y2*dR_neigh(:,j,itype,iat)
-! Note, (k+1,itype) is the feature inde
-      endif
-
-
-      if(k.gt.0.and.k.le.n2b) then   ! k feature
-      x=(d-grid2(k-2))/(grid2(k+1)-grid2(k-2))
-      y=(x-0.5d0)*pi2
-      f1=0.5d0*(cos(y)+1)
-      feat2(k,itype,iat)=feat2(k,itype,iat)+f1
-      y2=-pi*sin(y)/(d*(grid2(k+1)-grid2(k-2)))
-      dfeat2(k,itype,iat,jj,:)=dfeat2(k,itype,iat,jj,:)+y2*dR_neigh(:,j,itype,iat)
-      dfeat2(k,itype,iat,1,:)=dfeat2(k,itype,iat,1,:)-y2*dR_neigh(:,j,itype,iat)
-! Note, (k+1,itype) is the feature inde
-      endif
-
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
-      do k=1,n3b1+1
-      if(grid31(k).ge.d) exit
+      do k=1,n3b1(itype0)+1
+      if(grid31(k,itype0).ge.d) exit
       enddo
       k=k-1
-      if(k.gt.n3b1)  k=n3b1
+      if(k.gt.n3b1(itype0))  k=n3b1(itype0)
 
-      if(k.le.n3b1-2) then   !k+2 feature
-      x=(d-grid31(k))/(grid31(k+3)-grid31(k))
+      if(k.le.n3b1(itype0)-2) then   !k+2 feature
+      x=(d-grid31(k,itype0))/(grid31(k+3,itype0)-grid31(k,itype0))
       y=(x-0.5d0)*pi2
       f1=0.5d0*(cos(y)+1)
       feat3_tmp(1,j,itype)=f1
       ind_f(1,j,itype,iat)=k+2
-      y2=-pi*sin(y)/(d*(grid31(k+3)-grid31(k)))
+      y2=-pi*sin(y)/(d*(grid31(k+3,itype0)-grid31(k,itype0)))
       dfeat3_tmp(1,j,itype,:)=y2*dR_neigh(:,j,itype,iat)
       else
       feat3_tmp(1,j,itype)=0.d0
@@ -158,13 +114,13 @@
       dfeat3_tmp(1,j,itype,:)=0.d0
       endif
 
-      if(k.le.n3b1-1) then   !k+1 feature
-      x=(d-grid31(k-1))/(grid31(k+2)-grid31(k-1))
+      if(k.le.n3b1(itype0)-1) then   !k+1 feature
+      x=(d-grid31(k-1,itype0))/(grid31(k+2,itype0)-grid31(k-1,itype0))
       y=(x-0.5d0)*pi2
       f1=0.5d0*(cos(y)+1)
       feat3_tmp(2,j,itype)=f1
       ind_f(2,j,itype,iat)=k+1
-      y2=-pi*sin(y)/(d*(grid31(k+2)-grid31(k-1)))
+      y2=-pi*sin(y)/(d*(grid31(k+2,itype0)-grid31(k-1,itype0)))
       dfeat3_tmp(2,j,itype,:)=y2*dR_neigh(:,j,itype,iat)
       else
       feat3_tmp(2,j,itype)=0.d0
@@ -172,13 +128,13 @@
       dfeat3_tmp(2,j,itype,:)=0.d0
       endif
 
-      if(k.gt.0.and.k.le.n3b1) then   !k feature
-      x=(d-grid31(k-2))/(grid31(k+1)-grid31(k-2))
+      if(k.gt.0.and.k.le.n3b1(itype0)) then   !k feature
+      x=(d-grid31(k-2,itype0))/(grid31(k+1,itype0)-grid31(k-2,itype0))
       y=(x-0.5d0)*pi2
       f1=0.5d0*(cos(y)+1)
       feat3_tmp(3,j,itype)=f1
       ind_f(3,j,itype,iat)=k
-      y2=-pi*sin(y)/(d*(grid31(k+1)-grid31(k-2)))
+      y2=-pi*sin(y)/(d*(grid31(k+1,itype0)-grid31(k-2,itype0)))
       dfeat3_tmp(3,j,itype,:)=y2*dR_neigh(:,j,itype,iat)
       else
       feat3_tmp(3,j,itype)=0.d0
@@ -215,22 +171,22 @@
       d=dsqrt(dd)
 
 !      if(d.gt.Rc2) goto 2000
-      if(d.gt.Rc2.or.d.lt.1.D-4) goto 2000
+      if(d.gt.Rc2(itype0).or.d.lt.1.D-4) goto 2000
 
-      do k=1,n3b2+1
-      if(grid32(k).ge.d) exit
+      do k=1,n3b2(itype0)+1
+      if(grid32(k,itype0).ge.d) exit
       enddo
       k=k-1
-      if(k.gt.n3b2)  k=n3b2
+      if(k.gt.n3b2(itype0))  k=n3b2(itype0)
 
 
-      if(k.le.n3b2-2) then ! k+2 feature
-      x=(d-grid32(k))/(grid32(k+3)-grid32(k))
+      if(k.le.n3b2(itype0)-2) then ! k+2 feature
+      x=(d-grid32(k,itype0))/(grid32(k+3,itype0)-grid32(k,itype0))
       y=(x-0.5d0)*pi2
       f1=0.5d0*(cos(y)+1)
       f32(1)=f1
       ind_f32(1)=k+2
-      y2=-pi*sin(y)/(d*(grid32(k+3)-grid32(k)))
+      y2=-pi*sin(y)/(d*(grid32(k+3,itype0)-grid32(k,itype0)))
       df32(1,1,:)=y2*(dR_neigh(:,j1,itype1,iat)-dR_neigh(:,j2,itype2,iat))
       df32(1,2,:)=-df32(1,1,:)
       else
@@ -240,13 +196,13 @@
       endif
 
 
-      if(k.le.n3b2-1) then ! k+1 feature
-      x=(d-grid32(k-1))/(grid32(k+2)-grid32(k-1))
+      if(k.le.n3b2(itype0)-1) then ! k+1 feature
+      x=(d-grid32(k-1,itype0))/(grid32(k+2,itype0)-grid32(k-1,itype0))
       y=(x-0.5d0)*pi2
       f1=0.5d0*(cos(y)+1)
       f32(2)=f1
       ind_f32(2)=k+1
-      y2=-pi*sin(y)/(d*(grid32(k+2)-grid32(k-1)))
+      y2=-pi*sin(y)/(d*(grid32(k+2,itype0)-grid32(k-1,itype0)))
       df32(2,1,:)=y2*(dR_neigh(:,j1,itype1,iat)-dR_neigh(:,j2,itype2,iat))
       df32(2,2,:)=-df32(2,1,:)
       else
@@ -256,13 +212,13 @@
       endif
 
 
-      if(k.gt.0.and.k.le.n3b2) then ! k feature
-      x=(d-grid32(k-2))/(grid32(k+1)-grid32(k-2))
+      if(k.gt.0.and.k.le.n3b2(itype0)) then ! k feature
+      x=(d-grid32(k-2,itype0))/(grid32(k+1,itype0)-grid32(k-2,itype0))
       y=(x-0.5d0)*pi2
       f1=0.5d0*(cos(y)+1)
       f32(3)=f1
       ind_f32(3)=k
-      y2=-pi*sin(y)/(d*(grid32(k+1)-grid32(k-2)))
+      y2=-pi*sin(y)/(d*(grid32(k+1,itype0)-grid32(k-2,itype0)))
       df32(3,1,:)=y2*(dR_neigh(:,j1,itype1,iat)-dR_neigh(:,j2,itype2,iat))
       df32(3,2,:)=-df32(3,1,:)
       else
@@ -283,10 +239,10 @@
 
       ii_f=0
       if(itype1.ne.itype2) then
-      ii_f=k1+(k2-1)*n3b1+(k12-1)*n3b1**2
+      ii_f=k1+(k2-1)*n3b1(itype0)+(k12-1)*n3b1(itype0)**2
       endif
       if(itype1.eq.itype2.and.k1.le.k2) then
-      ii_f=k1+((k2-1)*k2)/2+(k12-1)*(n3b1*(n3b1+1))/2
+      ii_f=k1+((k2-1)*k2)/2+(k12-1)*(n3b1(itype0)*(n3b1(itype0)+1))/2
       endif
 
       if(ii_f.ne.0) then
@@ -322,31 +278,26 @@
 !   and feat2,feat3, into a single feature. 
 
       do 5000 iat=1,natom
+      itype0=itype_atom(iat)
       nneigh=num_neigh_alltype(iat)
+
       num=0
-      do itype=1,ntype
-      do k=1,n2b
-      num=num+1
-      feat_all(num,iat)=feat2(k,itype,iat)
-      dfeat_all(num,iat,1:nneigh,:)=dfeat2(k,itype,iat,1:nneigh,:)
-      enddo
-      enddo
 
       do itype2=1,ntype
       do itype1=1,itype2
 
       itype12=itype1+((itype2-1)*itype2)/2
 
-      do k1=1,n3b1
-      do k2=1,n3b1
-      do k12=1,n3b2
+      do k1=1,n3b1(itype0)
+      do k2=1,n3b1(itype0)
+      do k12=1,n3b2(itype0)
 
       ii_f=0
       if(itype1.ne.itype2) then
-      ii_f=k1+(k2-1)*n3b1+(k12-1)*n3b1**2
+      ii_f=k1+(k2-1)*n3b1(itype0)+(k12-1)*n3b1(itype0)**2
       endif
       if(itype1.eq.itype2.and.k1.le.k2) then
-      ii_f=k1+((k2-1)*k2)/2+(k12-1)*(n3b1*(n3b1+1))/2
+      ii_f=k1+((k2-1)*k2)/2+(k12-1)*(n3b1(itype0)*(n3b1(itype0)+1))/2
       endif
 
       if(ii_f.gt.0) then
@@ -359,8 +310,11 @@
       enddo
       enddo
       enddo
-      nfeat0=num
       enddo
+      nfeat_atom(iat)=num
+      if(num.gt.nfeat0m) then
+      write(6,*) "num.gt.nfeat0m,stop", num,nfeat0m
+      endif
 
 5000  continue
 
@@ -372,6 +326,7 @@
 !  dfeat_allR(nfeat,iat,jneigh,3) means:
 !  d_jth_feat_of_jth_neigh/d_R(iat)
 !cccccccccccccccccccccccccccccccccccccc
+      dfeat_allR=0.d0
 
       do iat=1,natom
       do j=1,num_neigh_alltype(iat)
@@ -387,8 +342,11 @@
 
       if(dd.lt.1.E-8) then
  
-      do ii_f=1,nfeat0
+      do ii_f=1,nfeat_atom(iat)
       dfeat_allR(ii_f,iat2,j2,:)=dfeat_all(ii_f,iat,j,:)
+!ccc Note, dfeat_allR(i,iat2,j2,3), it can have more i then nfeat_atom(iat2),
+! since it is the nfeat of j2_neighbore
+
       enddo
       endif
       endif
@@ -398,9 +356,8 @@
       enddo
       enddo
 !ccccccccccccccccccccccccccccccccccccc
-
       return
-      end subroutine find_feature3
+      end subroutine find_feature_3b_type2
 
 
 
