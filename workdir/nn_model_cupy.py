@@ -13,6 +13,8 @@ import numpy as np
 
 import parameters as pm
 # from funcs.atoms_struct import get_atoms_type
+import prepare as pp
+pp.readFeatnum()
 
 class EiNN_cupy:
     """

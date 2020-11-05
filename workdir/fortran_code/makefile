@@ -1,5 +1,5 @@
-CALCFTYPE1=gen_2b_feature.f90 get_grid2b_type1.f90 get_grid2b_type2.f90 find_neighbore00.f90 find_neighbore.f90 find_feature_2b_type1.f90 find_feature_2b_type2.f90 find_feature_2b_type3.f90
-CALCFTYPE2=gen_3b_feature.f90 get_grid3b_type1.f90 get_grid3b_type2.f90 find_neighbore00.f90 find_neighbore.f90 find_feature_3b_type1.f90 find_feature_3b_type2.f90 find_feature_3b_type3.f90
+CALCFTYPE1=gen_2b_feature.f90 find_neighbore00.f90 find_neighbore.f90 find_feature_2b_type1.f90 find_feature_2b_type2.f90 find_feature_2b_type3.f90
+CALCFTYPE2=gen_3b_feature.f90 find_neighbore00.f90 find_neighbore.f90 find_feature_3b_type1.f90 find_feature_3b_type2.f90 find_feature_3b_type3.f90
 CALCLINSRC=calc_lin_forceM_module.f90
 CALCCLSTSRC=calc_lin_clusterM_module.f90
 DFEAT=read_dfeatNN.f90

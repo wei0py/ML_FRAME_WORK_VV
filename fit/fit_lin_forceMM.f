@@ -216,7 +216,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        ! MOVEMENTDir=trim(trainSetFileDir(sys))//"/MOVEMENT"
        dfeatDir=trim(trainSetFileDir(sys))//"/dfeat.fbin.Ftype"
      &          //char(ifeat_type(kkk)+48)
-       open(1000+kkk,file=dfeatDir,action="read",!access="stream",
+       open(1000+kkk,file=dfeatDir,action="read",access="stream",
      &     form="unformatted")
        rewind(1000+kkk)
        read(1000+kkk) nimaget,natomt,nfeat1tm(kkk),

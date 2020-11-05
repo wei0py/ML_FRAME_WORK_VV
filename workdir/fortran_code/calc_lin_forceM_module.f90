@@ -32,7 +32,7 @@ module calc_lin
     !integer, allocatable, dimension (:) :: num_inv                              !calc_linear无用数据
     !integer, allocatable, dimension (:, :) :: index_inv, index_inv2             !calc_linear无用数据
     !character (len=80) dfeat_n(400)  
-    !integer, allocatable, dimension (:) ::  num_ref, num_refi, nfeat0, nfeat2,nfeat2i  
+    !integer, allocatable, dimension (:) ::  num_ref, num_refi, nfeat1, nfeat2,nfeat2i  
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   
   
@@ -41,26 +41,28 @@ module calc_lin
   !!!!!!!!!!!!!          以下为  module variables     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   
-    character(80),parameter :: fit_input_path0="fit.input"
+    character(80),parameter :: fit_input_path0="fit_linearMM.input"
+    character(80),parameter :: feat_info_path0="feat.info"
     character(80),parameter :: model_coefficients_path0="linear_fitB.ntype"
     character(80),parameter :: weight_feat_path_header0="weight_feat."
     character(80),parameter :: feat_pv_path_header0="feat_PV."
     
     character(200) :: fit_input_path=trim(fit_input_path0)
+    character(200) :: feat_info_path=trim(feat_info_path0)
     character(200) :: model_coefficients_path=trim(model_coefficients_path0)
     character(200) :: weight_feat_path_header=trim(weight_feat_path_header0)
     character(200) :: feat_pv_path_header=trim(feat_pv_path_header0)
   
     integer(4) :: ntype                                    !模型所有涉及的原子种类
     integer(4) :: m_neigh                                  !模型所使用的最大近邻数(考虑这个数是否可以不用)
-    integer(4) :: nfeat0m                                  !不同种原子的原始feature数目中最大者(目前似无意义)
+    integer(4) :: nfeat1m                                  !不同种原子的原始feature数目中最大者(目前似无意义)
     integer(4) :: nfeat2m                                  !不同种原子的PCA之后feature数目中最大者
     integer(4) :: nfeat2tot                                !PCA之后各种原子的feature数目之和
-    integer(4),allocatable,dimension(:) :: nfeat0          !各种原子的原始feature数目
+    integer(4),allocatable,dimension(:) :: nfeat1          !各种原子的原始feature数目
     integer(4),allocatable,dimension(:) :: nfeat2          !各种原子PCA之后的feature数目
     integer(4),allocatable,dimension(:) :: nfeat2i         !用来区分计算时各段各属于哪种原子的分段端点序号
-    integer(4),allocatable,dimension(:) :: num_ref         !各种原子取的reference points的数目(对linear无意义)
-    integer(4),allocatable,dimension(:) :: num_refi        !用来区分各种原子的reference points的分段端点序号(对linear无意义)
+    ! integer(4),allocatable,dimension(:) :: num_ref         !各种原子取的reference points的数目(对linear无意义)
+    ! integer(4),allocatable,dimension(:) :: num_refi        !用来区分各种原子的reference points的分段端点序号(对linear无意义)
   
   
     real(8),allocatable,dimension(:) :: bb                 !计算erergy和force时与new feature相乘的系数向量w
@@ -90,6 +92,7 @@ module calc_lin
     integer(4) :: add_force_num,power
 
     real*8,allocatable,dimension(:) :: rad_atom,wp_atom
+    integer(4) :: nfeat1tm(100),ifeat_type(100),nfeat1t(100)
     
   
   !!!!!!!!!!!!!          以上为  module variables     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -111,6 +114,7 @@ module calc_lin
                 fit_dir=fit_dir_simp
             end if
             fit_input_path=fit_dir//'/'//trim(fit_input_path0)
+            feat_info_path=fit_dir//'/'//trim(feat_info_path0)
             model_coefficients_path=fit_dir//'/'//trim(model_coefficients_path0)
             weight_feat_path_header=fit_dir//'/'//trim(weight_feat_path_header0)
             feat_pv_path_header=fit_dir//'/'//trim(feat_pv_path_header0)
@@ -119,19 +123,20 @@ module calc_lin
     
     subroutine load_model()
     
-        integer(4) :: nimage,num_refm,num_reftot,nfeat0_tmp,nfeat2_tmp,itype,i,k,ntmp,itmp
+        integer(4) :: nimage,num_refm,num_reftot,nfeat1_tmp,nfeat2_tmp,itype,i,k,ntmp,itmp
+        integer(4) :: iflag_PCA,nfeat_type,kkk,ntype_tmp,iatom_tmp
         real(8) :: dist0
-    
+
+        ! integer(4),allocatable,dimension(:,:) :: nfeat,ipos_feat
+
+! **************** read fit_linearMM.input ********************    
         open (10, file=trim(fit_input_path))
-        rewind (10)
-        read (10, *) ntype, natom, m_neigh, nimage         !(nimage对md计算的模型无意义，natom是之后set_image_info中应读入的数据，此处读入没有意义)
-      !       allocate(itype_atom(ntype))
+        rewind(10)
+        read(10,*) ntype,m_neigh
         if (allocated(itype_atom)) then
             deallocate(itype_atom)
-            deallocate(nfeat0)
+            deallocate(nfeat1)
             deallocate (nfeat2)
-            deallocate (num_ref)
-            deallocate (num_refi)
             deallocate (rad_atom)
             deallocate (wp_atom)
             deallocate (nfeat2i)
@@ -150,10 +155,8 @@ module calc_lin
         end if
         
         allocate (itype_atom(ntype))
-        allocate (nfeat0(ntype))
+        allocate (nfeat1(ntype))
         allocate (nfeat2(ntype))
-        allocate (num_ref(ntype))
-        allocate (num_refi(ntype))
         allocate (nfeat2i(ntype))
         
         allocate (num(ntype))                              !image数据,在此处allocate，但在set_image_info中赋值
@@ -161,36 +164,56 @@ module calc_lin
         allocate (rad_atom(ntype))
         allocate (wp_atom(ntype))
 
+        do i=1,ntype
+            read(10,*) itype_atom(i),rad_atom(i),wp_atom(i)
+        enddo
+        ! read(10,*) weight_E,weight_E0,weight_F
+        close(10)
         
-        do i = 1, ntype
-            read (10, *) itype_atom(i), nfeat0(i), nfeat2(i), num_ref(i), &
-    rad_atom(i), wp_atom(i)     !num_ref对linear无意义,nfeat0对每种元素其实都一样
-        end do
-            !read (10, *) alpha, dist0
-            !read (10, *) weight_e, weight_e0, weight_f, delta
-        close (10)
-        
-        dist0 = dist0**2
-        nfeat0m = 0
-        nfeat2m = 0
-        num_refm = 0
-        num_reftot = 0
-        num_refi(1) = 0
-        nfeat2tot = 0
-        nfeat2i = 0
-        nfeat2i(1) = 0
-        
-        do i = 1, ntype
-            if (nfeat0(i)>nfeat0m) nfeat0m = nfeat0(i)
-            if (nfeat2(i)>nfeat2m) nfeat2m = nfeat2(i)
-            if (num_ref(i)>num_refm) num_refm = num_ref(i)
-            num_reftot = num_reftot + num_ref(i)
-            nfeat2tot = nfeat2tot + nfeat2(i)
-            if (i>1) then
-                num_refi(i) = num_refi(i-1) + num_ref(i-1)
-                nfeat2i(i) = nfeat2i(i-1) + nfeat2(i-1)
-            end if
-        end do
+! **************** read feat.info ********************
+        open(10,file=trim(feat_info_path))
+        rewind(10)
+        read(10,*) iflag_PCA   ! this can be used to turn off degmm part
+        read(10,*) nfeat_type
+        do kkk=1,nfeat_type
+          read(10,*) ifeat_type(kkk)   ! the index (1,2,3) of the feature type
+        enddo
+        read(10,*) ntype_tmp
+        if(ntype_tmp.ne.ntype) then
+            write(*,*)  "ntype of atom not same, fit_linearMM.input, feat.info, stop"
+            write(*,*) ntype,ntype_tmp
+            stop
+        endif
+        ! allocate(nfeat(ntype,nfeat_type))
+        ! allocate(ipos_feat(ntype,nfeat_type))
+        do i=1,ntype
+            read(10,*) iatom_tmp,nfeat1(i),nfeat2(i)   ! these nfeat1,nfeat2 include all ftype
+            if(iatom_tmp.ne.itype_atom(i)) then
+                write(*,*) "iatom not same, fit_linearMM.input, feat.info"
+                write(*,*) iatom_tmp,itype_atom(i)
+                stop
+            endif
+        enddo
+
+    ! cccccccc Right now, nfeat1,nfeat2,for different types
+    ! cccccccc must be the same. We will change that later, allow them 
+    ! cccccccc to be different
+           nfeat1m=0   ! the original feature
+           nfeat2m=0   ! the new PCA, PV feature
+           nfeat2tot=0 ! tht total feature of diff atom type
+           nfeat2i=0   ! the starting point
+           nfeat2i(1)=0
+           do i=1,ntype
+           if(nfeat1(i).gt.nfeat1m) nfeat1m=nfeat1(i)
+           if(nfeat2(i).gt.nfeat2m) nfeat2m=nfeat2(i)
+           nfeat2tot=nfeat2tot+nfeat2(i)
+           if(i.gt.1) then
+           nfeat2i(i)=nfeat2i(i-1)+nfeat2(i-1)
+           endif
+    
+           enddo
+
+
         allocate (bb(nfeat2tot))
         allocate (bb_type(nfeat2m,ntype))
         allocate (bb_type0(nfeat2m,ntype))
@@ -212,23 +235,23 @@ module calc_lin
             end do
         end do
         
-        allocate (pv(nfeat0m,nfeat2m,ntype))
+        allocate (pv(nfeat1m,nfeat2m,ntype))
         allocate (feat2_shift(nfeat2m,ntype))
         allocate (feat2_scale(nfeat2m,ntype))
         
         do itype = 1, ntype
             open (11, file=trim(feat_pv_path_header)//char(itype+48), form='unformatted')
             rewind (11)
-            read (11) nfeat0_tmp, nfeat2_tmp
+            read (11) nfeat1_tmp, nfeat2_tmp
             if (nfeat2_tmp/=nfeat2(itype)) then
                 write (6, *) 'nfeat2.not.same,feat2_ref', itype, nfeat2_tmp, nfeat2(itype)
                 stop
             end if
-            if (nfeat0_tmp/=nfeat0(itype)) then
-                write (6, *) 'nfeat0.not.same,feat2_ref', itype, nfeat0_tmp, nfeat0(itype)
+            if (nfeat1_tmp/=nfeat1(itype)) then
+                write (6, *) 'nfeat1.not.same,feat2_ref', itype, nfeat1_tmp, nfeat1(itype)
                 stop
             end if
-            read (11) pv(1:nfeat0(itype), 1:nfeat2(itype), itype)
+            read (11) pv(1:nfeat1(itype), 1:nfeat2(itype), itype)
             read (11) feat2_shift(1:nfeat2(itype), itype)
             read (11) feat2_scale(1:nfeat2(itype), itype)
             close (11)
@@ -303,13 +326,10 @@ module calc_lin
         
     end subroutine set_image_info
   
-    subroutine cal_energy_force(feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh,list_neigh,AL,xatom)
+    subroutine cal_energy_force(feat,dfeat,num_neigh,list_neigh,AL,xatom)
         integer(4)  :: itype,ixyz,i,j,jj
         real(8) :: sum
         real(8),dimension(:,:),intent(in) :: feat
-        real*8, dimension (:,:),intent(in) :: dfeat_tmp
-        integer(4), intent(in) :: num_tmp
-        integer(4),dimension (:),intent(in) :: iat_tmp,jneigh_tmp,ifeat_tmp
         ! real(8),dimension(:,:,:,:),intent(in) :: dfeat
         integer(4),dimension(:),intent(in) :: num_neigh
         integer(4),dimension(:,:),intent(in) :: list_neigh
@@ -317,7 +337,7 @@ module calc_lin
         real(8),dimension(:,:),intent(in) :: xatom
         !real(8),dimension(:) :: energy_pred
         !real(8),dimension(:,:) :: force_pred
-        real*8,allocatable,dimension(:,:,:,:) :: dfeat
+        real*8,dimension(:,:,:,:),intent(in) :: dfeat
                 
         
         real(8),allocatable,dimension(:,:) :: feat2
@@ -342,19 +362,13 @@ module calc_lin
         
         open(99,file='log.txt')
         
-        !allocate(energy_pred(natom))
-        !allocate(force_pred(3,natom))
-        allocate(dfeat(nfeat0m,natom,m_neigh,3))
-        dfeat(:,:,:,:)=0.0
-        do jj=1,num_tmp
-        dfeat(ifeat_tmp(jj),iat_tmp(jj),jneigh_tmp(jj),:)=dfeat_tmp(:,jj)
-        enddo
+
  
         allocate(feat2(nfeat2m,natom))
-        allocate(feat_type(nfeat0m,natom,ntype))
+        allocate(feat_type(nfeat1m,natom,ntype))
         allocate(feat2_type(nfeat2m,natom,ntype))
         allocate(ind_type(natom,ntype))
-        allocate(dfeat_type(nfeat0m,natom*m_neigh*3,ntype))
+        allocate(dfeat_type(nfeat1m,natom*m_neigh*3,ntype))
         allocate(dfeat2_type(nfeat2m,natom*m_neigh*3,ntype))
         allocate(dfeat2(nfeat2m,natom,m_neigh,3))
         allocate(ss(nfeat2m,natom,3,ntype))
@@ -370,12 +384,12 @@ module calc_lin
         write(*,*)dfeat_shape
         write(*,*)'list_neigh_shape'
         write(*,*)list_neigh_shape
-        write(*,*)"nfeat0m,natom,m_neigh"
-        write(*,*)nfeat0m,natom,m_neigh
+        write(*,*)"nfeat1m,natom,m_neigh"
+        write(*,*)nfeat1m,natom,m_neigh
         !close(99)
         !open(99,file='log.txt',position='append')
-        if (feat_shape(1)/=nfeat0m .or. feat_shape(2)/=natom &
-             .or. dfeat_shape(1)/=nfeat0m .or. dfeat_shape(2)/=natom .or. dfeat_shape(4)/=3 &
+        if (feat_shape(1)/=nfeat1m .or. feat_shape(2)/=natom &
+             .or. dfeat_shape(1)/=nfeat1m .or. dfeat_shape(2)/=natom .or. dfeat_shape(4)/=3 &
              .or. size(num_neigh)/=natom  .or. list_neigh_shape(2)/=natom) then      
             
             write(99,*) "Shape of input arrays don't match the model!"
@@ -386,14 +400,7 @@ module calc_lin
             error_msg="Shape of input arrays don't match the model!"
             return
         end if
-        !allocate (feat2(nfeat2m,natom))
-        !allocate (feat_type(nfeat0m,natom,ntype))
-        !allocate (feat2_type(nfeat2m,natom,ntype))
-        !allocate (ind_type(natom,ntype))
-        !allocate (dfeat_type(nfeat0m,natom*m_neigh*3,ntype))
-        !allocate (dfeat2_type(nfeat2m,natom*m_neigh*3,ntype))
-        !allocate (dfeat2(nfeat2m,natom,m_neigh,3))    
-        !allocate (ss(nfeat2m,natom,3,ntype))
+
         
         
         !write(99,*) "all arrays shape right"
@@ -414,7 +421,7 @@ module calc_lin
         !open(99,file='log.txt',position='append')
         
         do itype = 1, ntype
-            call dgemm('T', 'N', nfeat2(itype), num(itype), nfeat0(itype), 1.d0, pv(1,1,itype), nfeat0m, feat_type(1,1,itype), nfeat0m, 0.d0,feat2_type(1,1,itype), nfeat2m)
+            call dgemm('T', 'N', nfeat2(itype), num(itype), nfeat1(itype), 1.d0, pv(1,1,itype), nfeat1m, feat_type(1,1,itype), nfeat1m, 0.d0,feat2_type(1,1,itype), nfeat2m)
         end do
     
         !write(99,*)"feat2_type normlly setted first time"
@@ -471,7 +478,7 @@ module calc_lin
         !cccccccc note: num(itype) is rather large, in the scane of natom*num_neigh
     
         do itype = 1, ntype
-            call dgemm('T', 'N', nfeat2(itype), num(itype), nfeat0(itype), 1.d0, pv(1,1,itype), nfeat0m, dfeat_type(1,1,itype), nfeat0m, 0.d0, dfeat2_type(1,1,itype), nfeat2m)
+            call dgemm('T', 'N', nfeat2(itype), num(itype), nfeat1(itype), 1.d0, pv(1,1,itype), nfeat1m, dfeat_type(1,1,itype), nfeat1m, 0.d0, dfeat2_type(1,1,itype), nfeat2m)
         end do
     
         !write(99,*)"dfeat2_type normlly setted first time"
@@ -616,17 +623,14 @@ module calc_lin
         deallocate(dfeat2_type)
         deallocate(dfeat2)
         deallocate(ss)
-        deallocate(dfeat)
+        ! deallocate(dfeat)
     end subroutine cal_energy_force
 
       
-    subroutine cal_only_energy(feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh,list_neigh,AL,xatom)
+    subroutine cal_only_energy(feat,dfeat,num_neigh,list_neigh,AL,xatom)
         integer(4)  :: itype,ixyz,i,j,jj
         real(8) :: sum
         real(8),dimension(:,:),intent(in) :: feat
-        real*8, dimension (:,:),intent(in) :: dfeat_tmp
-        integer(4), intent(in) :: num_tmp
-        integer(4),dimension (:),intent(in) :: iat_tmp,jneigh_tmp,ifeat_tmp
         ! real(8),dimension(:,:,:,:),intent(in) :: dfeat
         integer(4),dimension(:),intent(in) :: num_neigh
         integer(4),dimension(:,:),intent(in) :: list_neigh
@@ -634,7 +638,7 @@ module calc_lin
         real(8),dimension(:,:),intent(in) :: xatom
         !real(8),dimension(:) :: energy_pred
         !real(8),dimension(:,:) :: force_pred
-        real*8,allocatable,dimension(:,:,:,:) :: dfeat
+        real*8,dimension(:,:,:,:),intent(in) :: dfeat
                 
         
         real(8),allocatable,dimension(:,:) :: feat2
@@ -654,17 +658,9 @@ module calc_lin
         
         
         open(99,file='log.txt')
-        
-        !allocate(energy_pred(natom))
-        !allocate(force_pred(3,natom))
-        allocate(dfeat(nfeat0m,natom,m_neigh,3))
-        dfeat(:,:,:,:)=0.0
-        do jj=1,num_tmp
-        dfeat(ifeat_tmp(jj),iat_tmp(jj),jneigh_tmp(jj),:)=dfeat_tmp(:,jj)
-        enddo
  
         allocate(feat2(nfeat2m,natom))
-        allocate(feat_type(nfeat0m,natom,ntype))
+        allocate(feat_type(nfeat1m,natom,ntype))
         allocate(feat2_type(nfeat2m,natom,ntype))
         allocate(ind_type(natom,ntype))
 
@@ -680,12 +676,12 @@ module calc_lin
         write(*,*)dfeat_shape
         write(*,*)'list_neigh_shape'
         write(*,*)list_neigh_shape
-        write(*,*)"nfeat0m,natom,m_neigh"
-        write(*,*)nfeat0m,natom,m_neigh
+        write(*,*)"nfeat1m,natom,m_neigh"
+        write(*,*)nfeat1m,natom,m_neigh
         !close(99)
         !open(99,file='log.txt',position='append')
-        if (feat_shape(1)/=nfeat0m .or. feat_shape(2)/=natom &
-             .or. dfeat_shape(1)/=nfeat0m .or. dfeat_shape(2)/=natom .or. dfeat_shape(4)/=3 &
+        if (feat_shape(1)/=nfeat1m .or. feat_shape(2)/=natom &
+             .or. dfeat_shape(1)/=nfeat1m .or. dfeat_shape(2)/=natom .or. dfeat_shape(4)/=3 &
              .or. size(num_neigh)/=natom  .or. list_neigh_shape(2)/=natom) then      
             
             write(99,*) "Shape of input arrays don't match the model!"
@@ -717,7 +713,7 @@ module calc_lin
         !open(99,file='log.txt',position='append')
         
         do itype = 1, ntype
-            call dgemm('T', 'N', nfeat2(itype), num(itype), nfeat0(itype), 1.d0, pv(1,1,itype), nfeat0m, feat_type(1,1,itype), nfeat0m, 0.d0,feat2_type(1,1,itype), nfeat2m)
+            call dgemm('T', 'N', nfeat2(itype), num(itype), nfeat1(itype), 1.d0, pv(1,1,itype), nfeat1m, feat_type(1,1,itype), nfeat1m, 0.d0,feat2_type(1,1,itype), nfeat2m)
         end do
     
         !write(99,*)"feat2_type normlly setted first time"

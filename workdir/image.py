@@ -217,7 +217,7 @@ class Image():
             self.heightVect=volume/areaVect
         if abs(cosAng).max()<0.0001:
             self.isOrthogonalCell=True
-        if self.heightVect.min()>pm.Rcut*2.0:
+        if self.heightVect.min()>pm.Rc_M*2.0:
             self.isCheckSupercell=False
         
 
@@ -259,7 +259,7 @@ class Image():
 
 
 
-    def calCellNeighborStruct(self,shiftVect=cp.zeros((3,)),shiftOrder=0,rMin=pm.rMin,rCut=pm.Rcut):
+    def calCellNeighborStruct(self,shiftVect=cp.zeros((3,)),shiftOrder=0,rMin=pm.rMin,rCut=pm.Rc_M):
         '''
         此方法用于计算Image中self.distanceVectArray移动一个固定的矢量后的所有原子的近邻结构
         此函数会自动调用之前计算的原子近邻的结构数据并更新之
@@ -314,7 +314,7 @@ class Image():
 
 
 
-    def calAllNeighborStruct(self,isSave=False,isCheckFile=True,rMin=pm.rMin,rCut=pm.Rcut):
+    def calAllNeighborStruct(self,isSave=False,isCheckFile=True,rMin=pm.rMin,rCut=pm.Rc_M):
         '''
         此方法用于计算整个Image的近邻结构数据,但不包括最后的近邻列表和近邻原子位矢差矩阵的数据
         之所以有此方法是为了更快地搜集可以确定最大近邻原子数的数据
@@ -402,211 +402,211 @@ class Image():
         
         '''
 
-    def getMaxNeighborNum(self,isSaveStructData=False):
-        '''
-        计算一个Image的最大近邻原子数,不需要储存,返回之即可
+    # def getMaxNeighborNum(self,isSaveStructData=False):
+    #     '''
+    #     计算一个Image的最大近邻原子数,不需要储存,返回之即可
 
 
-        Parameters
-        ---------------------        
-        isSaveStructData:                 bool对象,决定计算部分近邻信息后是否存储到文件, 默认值为False
+    #     Parameters
+    #     ---------------------        
+    #     isSaveStructData:                 bool对象,决定计算部分近邻信息后是否存储到文件, 默认值为False
         
 
-        Returns
-        ---------------------        
-        int(self.neighborNumOfAllAtoms.max()):  int对象,该图像中的最大近邻原子数
-        
-        
-
-        By self.calAllNeighborStruct
-        ---------------------
-        shiftVects:                        cp.array对象,float, 7*3, 0矢量,以及self.cupyCell的六个方向单位矢量,只有在self.isCheckSupercell为真时会计算
-        isNeighborMask:                    cp.array对象,bool, numOfAtoms*numOfAtoms*3, 存储了原子两两之间是否相邻的信息
-        neighborNumOfAllAtoms:             cp.array对象,int, numOfAtoms, 存储了图像中各个原子近邻原子的数目的信息
-        neighborIndexOfCenterAtoms:        cp.array对象,int, 一维,和self.neighborIndexOfNeighborAtoms一起存储了图像中所有近邻原子对的序数对
-        neighborIndexOfNeighborAtoms:      cp.array对象,int, 一维,和self.neighborIndexOfCenterAtoms一起存储了图像中所有近邻原子对的序数对
-
-
-        By self.calDistanceVectArray Indirectly
-        ---------------------        
-        distanceVectArray:                 cp.array对象,float, numOfAtoms*numOfAtoms*3, 存储直角坐标,以A为单位的所有原子两两距离矢量,(i,j)=>Rj-Ri,i为中心原子序号,j为近邻原子序号
-        '''
-
-        self.calAllNeighborStruct(isSaveStructData)
-        return int(self.neighborNumOfAllAtoms.max())
+    #     Returns
+    #     ---------------------        
+    #     int(self.neighborNumOfAllAtoms.max()):  int对象,该图像中的最大近邻原子数
         
         
 
+    #     By self.calAllNeighborStruct
+    #     ---------------------
+    #     shiftVects:                        cp.array对象,float, 7*3, 0矢量,以及self.cupyCell的六个方向单位矢量,只有在self.isCheckSupercell为真时会计算
+    #     isNeighborMask:                    cp.array对象,bool, numOfAtoms*numOfAtoms*3, 存储了原子两两之间是否相邻的信息
+    #     neighborNumOfAllAtoms:             cp.array对象,int, numOfAtoms, 存储了图像中各个原子近邻原子的数目的信息
+    #     neighborIndexOfCenterAtoms:        cp.array对象,int, 一维,和self.neighborIndexOfNeighborAtoms一起存储了图像中所有近邻原子对的序数对
+    #     neighborIndexOfNeighborAtoms:      cp.array对象,int, 一维,和self.neighborIndexOfCenterAtoms一起存储了图像中所有近邻原子对的序数对
 
-    def calAllNeighborInfo(self,isCheckFile=True):
-        '''
-        此方法用于计算整个Image的所有数据,包括最后的近邻列表和近邻原子位矢差矩阵等数据
-        因为要用到最大近邻原子数和工作的所有原子类型列表等数据
-        所以此函数的调用必须在初步处理了工作的全局变量才能开始
-        此函数应只作为为计算feat和dfeat用
 
+    #     By self.calDistanceVectArray Indirectly
+    #     ---------------------        
+    #     distanceVectArray:                 cp.array对象,float, numOfAtoms*numOfAtoms*3, 存储直角坐标,以A为单位的所有原子两两距离矢量,(i,j)=>Rj-Ri,i为中心原子序号,j为近邻原子序号
+    #     '''
 
-        Parameters
-        ---------------------        
-        isCheckFile:                            bool对象,决定是否检查存储部分近邻信息的文件是否已经存在并读取已有文件,默认值为True
+    #     self.calAllNeighborStruct(isSaveStructData)
+    #     return int(self.neighborNumOfAllAtoms.max())
+        
         
 
-        Returns
-        ---------------------        
-        None
+
+    # def calAllNeighborInfo(self,isCheckFile=True):
+    #     '''
+    #     此方法用于计算整个Image的所有数据,包括最后的近邻列表和近邻原子位矢差矩阵等数据
+    #     因为要用到最大近邻原子数和工作的所有原子类型列表等数据
+    #     所以此函数的调用必须在初步处理了工作的全局变量才能开始
+    #     此函数应只作为为计算feat和dfeat用
 
 
-        Determine Attributes Directly
-        ---------------------
-        neighborListOfAllAtoms:                 cp.array对象,int, numOfAtoms*pm.maxNeighborNum, (i,j)=> i是中心原子序号, 若(i,j)元素不为0,则是近邻原子序号+1
-        neighborDistanceVectArrayOfAllAtoms:    cp.array对象,float, numOfAtoms*pm.maxNeighborNum*3, 所有近邻原子对(i,j)=> Rj-Ri,i为中心原子序号,j为近邻原子序号
-        maskDictOfAllAtomTypesInNeighborList:   dict对象,int=>numOfAtoms*pm.maxNeighborNum的cp.array,从pm.atomTypeSet中的每种原子种类映射到self.neighborListOfAllAtoms中近邻是否此种原子
-        neighborDistanceArrayOfAllAtoms:        cp.array对象,float, numOfAtoms*pm.maxNeighborNum,所有近邻原子对(i,j)=> |Rj-Ri|,i为中心原子序号,j为近邻原子序号
-        neighborUnitVectArrayOfAllAtoms:        cp.array对象,float, numOfAtoms*pm.maxNeighborNum*3,所有近邻原子对(i,j)=> (Rj-Ri)/|Rj-Ri|,i为中心原子序号,j为近邻原子序号
-        abDistanceArray:                        cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.maxNeighborNum, (i,j1,jb2)=>所有原子的近邻原子两两间的距离矢量       
-        abUnitVectArray:                        cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.maxNeighborNum*3, (i,j1,jb2)=>所有原子的近邻原子两两间的距离矢量的单位矩阵
-        basic2bFeatArrayOfAllNeighborPairs:     cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.mulNumOf2bFeat,self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mFV2b(缩写))
-        basic3bFeatArrayOfAllNeighborPairs:     cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.mulNumOf3bFeat,self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mFV3b(缩写))
-        basic3bFeatArrayOfAllABpairs:           cp.array对象,float,numOfAtoms*pm.maxNeighborNum*pm.maxNeighborNum*pm.mulNumOf3bFeat,self.basicFunc(self.abDistanceArrayOfAllAtoms,pm.mFV3b)
+    #     Parameters
+    #     ---------------------        
+    #     isCheckFile:                            bool对象,决定是否检查存储部分近邻信息的文件是否已经存在并读取已有文件,默认值为True
         
 
-        By self.calAllNeighborStruct
-        ---------------------
-        shiftVects:                             cp.array对象,float, 7*3, 0矢量,以及self.cupyCell的六个方向单位矢量,只有在self.isCheckSupercell为真时会计算
-        isNeighborMask:                         cp.array对象,bool, numOfAtoms*numOfAtoms*3, 存储了原子两两之间是否相邻的信息
-        neighborNumOfAllAtoms:                  cp.array对象,int, numOfAtoms, 存储了图像中各个原子近邻原子的数目的信息
-        neighborIndexOfCenterAtoms:             cp.array对象,int, 一维,和self.neighborIndexOfNeighborAtoms一起存储了图像中所有近邻原子对的序数对
-        neighborIndexOfNeighborAtoms:           cp.array对象,int, 一维,和self.neighborIndexOfCenterAtoms一起存储了图像中所有近邻原子对的序数对
+    #     Returns
+    #     ---------------------        
+    #     None
 
 
-        By self.calDistanceVectArray Indirectly
-        ---------------------        
-        distanceVectArray:                      cp.array对象,float, numOfAtoms*numOfAtoms*3, 存储直角坐标,以A为单位的所有原子两两距离矢量,(i,j)=>Rj-Ri,i为中心原子序号,j为近邻原子序号
-        '''       
+    #     Determine Attributes Directly
+    #     ---------------------
+    #     neighborListOfAllAtoms:                 cp.array对象,int, numOfAtoms*pm.maxNeighborNum, (i,j)=> i是中心原子序号, 若(i,j)元素不为0,则是近邻原子序号+1
+    #     neighborDistanceVectArrayOfAllAtoms:    cp.array对象,float, numOfAtoms*pm.maxNeighborNum*3, 所有近邻原子对(i,j)=> Rj-Ri,i为中心原子序号,j为近邻原子序号
+    #     maskDictOfAllAtomTypesInNeighborList:   dict对象,int=>numOfAtoms*pm.maxNeighborNum的cp.array,从pm.atomTypeSet中的每种原子种类映射到self.neighborListOfAllAtoms中近邻是否此种原子
+    #     neighborDistanceArrayOfAllAtoms:        cp.array对象,float, numOfAtoms*pm.maxNeighborNum,所有近邻原子对(i,j)=> |Rj-Ri|,i为中心原子序号,j为近邻原子序号
+    #     neighborUnitVectArrayOfAllAtoms:        cp.array对象,float, numOfAtoms*pm.maxNeighborNum*3,所有近邻原子对(i,j)=> (Rj-Ri)/|Rj-Ri|,i为中心原子序号,j为近邻原子序号
+    #     abDistanceArray:                        cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.maxNeighborNum, (i,j1,jb2)=>所有原子的近邻原子两两间的距离矢量       
+    #     abUnitVectArray:                        cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.maxNeighborNum*3, (i,j1,jb2)=>所有原子的近邻原子两两间的距离矢量的单位矩阵
+    #     basic2bFeatArrayOfAllNeighborPairs:     cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.mulNumOf2bFeat,self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mFV2b(缩写))
+    #     basic3bFeatArrayOfAllNeighborPairs:     cp.array对象,float, numOfAtoms*pm.maxNeighborNum*pm.mulNumOf3bFeat,self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mFV3b(缩写))
+    #     basic3bFeatArrayOfAllABpairs:           cp.array对象,float,numOfAtoms*pm.maxNeighborNum*pm.maxNeighborNum*pm.mulNumOf3bFeat,self.basicFunc(self.abDistanceArrayOfAllAtoms,pm.mFV3b)
+        
+
+    #     By self.calAllNeighborStruct
+    #     ---------------------
+    #     shiftVects:                             cp.array对象,float, 7*3, 0矢量,以及self.cupyCell的六个方向单位矢量,只有在self.isCheckSupercell为真时会计算
+    #     isNeighborMask:                         cp.array对象,bool, numOfAtoms*numOfAtoms*3, 存储了原子两两之间是否相邻的信息
+    #     neighborNumOfAllAtoms:                  cp.array对象,int, numOfAtoms, 存储了图像中各个原子近邻原子的数目的信息
+    #     neighborIndexOfCenterAtoms:             cp.array对象,int, 一维,和self.neighborIndexOfNeighborAtoms一起存储了图像中所有近邻原子对的序数对
+    #     neighborIndexOfNeighborAtoms:           cp.array对象,int, 一维,和self.neighborIndexOfCenterAtoms一起存储了图像中所有近邻原子对的序数对
 
 
-        if hasattr(self,'neighborDistanceVectArrayOfAllAtoms'):
-            return
+    #     By self.calDistanceVectArray Indirectly
+    #     ---------------------        
+    #     distanceVectArray:                      cp.array对象,float, numOfAtoms*numOfAtoms*3, 存储直角坐标,以A为单位的所有原子两两距离矢量,(i,j)=>Rj-Ri,i为中心原子序号,j为近邻原子序号
+    #     '''       
+
+
+    #     if hasattr(self,'neighborDistanceVectArrayOfAllAtoms'):
+    #         return
 
         
-        self.calAllNeighborStruct(isSave=False,isCheckFile=isCheckFile)
-        self.neighborAtomOrderInNeighborListOfCenterAtoms=cp.concatenate([cp.arange(int(self.neighborNumOfAllAtoms[index])) for index in range(self.numOfAtoms)])
+    #     self.calAllNeighborStruct(isSave=False,isCheckFile=isCheckFile)
+    #     self.neighborAtomOrderInNeighborListOfCenterAtoms=cp.concatenate([cp.arange(int(self.neighborNumOfAllAtoms[index])) for index in range(self.numOfAtoms)])
 
-        argsort=cp.argsort(self.neighborIndexOfCenterAtoms)
-        self.neighborIndexOfCenterAtoms=self.neighborIndexOfCenterAtoms[argsort]
-        self.neighborIndexOfNeighborAtoms=self.neighborIndexOfNeighborAtoms[argsort]
+    #     argsort=cp.argsort(self.neighborIndexOfCenterAtoms)
+    #     self.neighborIndexOfCenterAtoms=self.neighborIndexOfCenterAtoms[argsort]
+    #     self.neighborIndexOfNeighborAtoms=self.neighborIndexOfNeighborAtoms[argsort]
 
 
         
-        self.neighborListOfAllAtoms=-cp.ones((self.numOfAtoms,1+pm.maxNeighborNum),dtype=cp.int)  #此处必得有dtype,否则默认是cp.float64类型. 而zeros_like或者ones_like函数的dtype默认和模板array一致
-        self.neighborDistanceVectArrayOfAllAtoms=cp.zeros((self.numOfAtoms,pm.maxNeighborNum,3))
-        self.maskDictOfAllAtomTypesInNeighborList={}
+    #     self.neighborListOfAllAtoms=-cp.ones((self.numOfAtoms,1+pm.maxNeighborNum),dtype=cp.int)  #此处必得有dtype,否则默认是cp.float64类型. 而zeros_like或者ones_like函数的dtype默认和模板array一致
+    #     self.neighborDistanceVectArrayOfAllAtoms=cp.zeros((self.numOfAtoms,pm.maxNeighborNum,3))
+    #     self.maskDictOfAllAtomTypesInNeighborList={}
 
 
-        #计算近邻原子列表self.neighborListOfAllAtoms以及近邻矢量矩阵self.neighborDistanceVectArrayOfAllAtoms
-        if self.isCheckSupercell:     #此为在有考虑大超胞的情况下的计算
-            self.neighborDistanceVectArrayOfAllAtoms[self.neighborIndexOfCenterAtoms,self.neighborAtomOrderInNeighborListOfCenterAtoms]=\
-                    self.distanceVectArray[self.neighborIndexOfCenterAtoms,self.neighborIndexOfNeighborAtoms%self.numOfAtoms]+self.shiftVects[self.neighborIndexOfNeighborAtoms//self.numOfAtoms]
-            for indexOfAtom in range(self.numOfAtoms):
-                neighborList=self.neighborIndexOfNeighborAtoms[self.neighborIndexOfCenterAtoms==indexOfAtom]%self.numOfAtoms     #%self.numOfAtoms)  #此处是否要用到%self.numOfAtoms需要再议…………
-                self.neighborListOfAllAtoms[indexOfAtom,1:1+neighborList.shape[0]]=neighborList                  #两种情况下是否要在第一列加上中心原子序数也需要再议
+    #     #计算近邻原子列表self.neighborListOfAllAtoms以及近邻矢量矩阵self.neighborDistanceVectArrayOfAllAtoms
+    #     if self.isCheckSupercell:     #此为在有考虑大超胞的情况下的计算
+    #         self.neighborDistanceVectArrayOfAllAtoms[self.neighborIndexOfCenterAtoms,self.neighborAtomOrderInNeighborListOfCenterAtoms]=\
+    #                 self.distanceVectArray[self.neighborIndexOfCenterAtoms,self.neighborIndexOfNeighborAtoms%self.numOfAtoms]+self.shiftVects[self.neighborIndexOfNeighborAtoms//self.numOfAtoms]
+    #         for indexOfAtom in range(self.numOfAtoms):
+    #             neighborList=self.neighborIndexOfNeighborAtoms[self.neighborIndexOfCenterAtoms==indexOfAtom]%self.numOfAtoms     #%self.numOfAtoms)  #此处是否要用到%self.numOfAtoms需要再议…………
+    #             self.neighborListOfAllAtoms[indexOfAtom,1:1+neighborList.shape[0]]=neighborList                  #两种情况下是否要在第一列加上中心原子序数也需要再议
 
-        else:                       #此为在没有考虑大超胞的情况下的计算
-            self.neighborDistanceVectArrayOfAllAtoms[self.neighborIndexOfCenterAtoms,self.neighborAtomOrderInNeighborListOfCenterAtoms]=self.distanceVectArray[self.neighborIndexOfCenterAtoms,self.neighborIndexOfNeighborAtoms]
-            for indexOfAtom in range(self.numOfAtoms):
-                neighborList=self.neighborIndexOfNeighborAtoms[self.neighborIndexOfCenterAtoms==indexOfAtom]
-                self.neighborListOfAllAtoms[indexOfAtom,1:1+neighborList.shape[0]]=neighborList        
-        self.neighborListOfAllAtoms[:,0]=cp.arange(self.numOfAtoms)
+    #     else:                       #此为在没有考虑大超胞的情况下的计算
+    #         self.neighborDistanceVectArrayOfAllAtoms[self.neighborIndexOfCenterAtoms,self.neighborAtomOrderInNeighborListOfCenterAtoms]=self.distanceVectArray[self.neighborIndexOfCenterAtoms,self.neighborIndexOfNeighborAtoms]
+    #         for indexOfAtom in range(self.numOfAtoms):
+    #             neighborList=self.neighborIndexOfNeighborAtoms[self.neighborIndexOfCenterAtoms==indexOfAtom]
+    #             self.neighborListOfAllAtoms[indexOfAtom,1:1+neighborList.shape[0]]=neighborList        
+    #     self.neighborListOfAllAtoms[:,0]=cp.arange(self.numOfAtoms)
             
 
 
-        '''
-        #此为初始版本，其效率令人难以忍受，需要30+秒的时间，需要尝试提高效率
-        #此段为计算每个中心原子在其近邻原子的近邻列表中的序号self.centerAtomOrderInNeighborListOfNeighborAtoms:
-        self.centerAtomOrderInNeighborListOfNeighborAtoms=-cp.ones_like(self.neighborListOfAllAtoms)
-        for i in range(self.numOfAtoms):
-            for j in range(pm.maxNeighborNum):
-                if self.neighborListOfAllAtoms[i,j]>-1:
-                    k=self.neighborListOfAllAtoms[i,j]
-                    k_line=k%self.numOfAtoms
-                    k_shiftOrder=k//self.numOfAtoms
-                    k_invShiftOrder=k_shiftOrder-min(k_shiftOrder,1)*(-1)**(k_shiftOrder%2)
-                    k_inv=k_invShiftOrder*self.numOfAtoms+i
-                    invOrder=cp.where(self.neighborListOfAllAtoms[k_line]==k_inv)[0][0]
-                    self.centerAtomOrderInNeighborListOfNeighborAtoms[i,j]=invOrder
-                    pass
+    #     '''
+    #     #此为初始版本，其效率令人难以忍受，需要30+秒的时间，需要尝试提高效率
+    #     #此段为计算每个中心原子在其近邻原子的近邻列表中的序号self.centerAtomOrderInNeighborListOfNeighborAtoms:
+    #     self.centerAtomOrderInNeighborListOfNeighborAtoms=-cp.ones_like(self.neighborListOfAllAtoms)
+    #     for i in range(self.numOfAtoms):
+    #         for j in range(pm.maxNeighborNum):
+    #             if self.neighborListOfAllAtoms[i,j]>-1:
+    #                 k=self.neighborListOfAllAtoms[i,j]
+    #                 k_line=k%self.numOfAtoms
+    #                 k_shiftOrder=k//self.numOfAtoms
+    #                 k_invShiftOrder=k_shiftOrder-min(k_shiftOrder,1)*(-1)**(k_shiftOrder%2)
+    #                 k_inv=k_invShiftOrder*self.numOfAtoms+i
+    #                 invOrder=cp.where(self.neighborListOfAllAtoms[k_line]==k_inv)[0][0]
+    #                 self.centerAtomOrderInNeighborListOfNeighborAtoms[i,j]=invOrder
+    #                 pass
 
                     
-        #上一步计算出来的结果实际上是个矩阵，并不适合使用，下面实际将之变成可以供后续使用的一维数组，和self.neighborIndexOfCenterAtoms，self.neighborIndexOfNeighborAtoms一样长度
-        #实际上，为了便于使用,在这一步也需要将self.neighborIndexOfNeighborAtoms对self.numOfAtoms取余
-        #self.neighborIndexOfNeighborAtoms=self.neighborIndexOfNeighborAtoms%self.numOfAtoms      #后续的方法仍然要用到这个
-        self.centerAtomOrderInNeighborListOfNeighborAtoms=self.centerAtomOrderInNeighborListOfNeighborAtoms[self.centerAtomOrderInNeighborListOfNeighborAtoms>-1]
-        '''
+    #     #上一步计算出来的结果实际上是个矩阵，并不适合使用，下面实际将之变成可以供后续使用的一维数组，和self.neighborIndexOfCenterAtoms，self.neighborIndexOfNeighborAtoms一样长度
+    #     #实际上，为了便于使用,在这一步也需要将self.neighborIndexOfNeighborAtoms对self.numOfAtoms取余
+    #     #self.neighborIndexOfNeighborAtoms=self.neighborIndexOfNeighborAtoms%self.numOfAtoms      #后续的方法仍然要用到这个
+    #     self.centerAtomOrderInNeighborListOfNeighborAtoms=self.centerAtomOrderInNeighborListOfNeighborAtoms[self.centerAtomOrderInNeighborListOfNeighborAtoms>-1]
+    #     '''
 
 
-        '''
-        #第二版的方法仍然让人难以忍受其速度，所以寻找第三版完全不需要用到循环，全程矩阵操作的办法！
-        #完全采用另外一种方法计算self.centerAtomOrderInNeighborListOfNeighborAtoms
-        #这一次直接将之设置成一维的，直接利用cp.where进行计算
-        #self.centerAtomOrderInNeighborListOfNeighborAtomsSlow=self.centerAtomOrderInNeighborListOfNeighborAtoms.copy()
-        self.centerAtomOrderInNeighborListOfNeighborAtoms=-cp.ones_like(self.neighborIndexOfNeighborAtoms)
-        k_shiftOrder=self.neighborIndexOfNeighborAtoms//self.numOfAtoms
-        k_invShiftOrder=k_shiftOrder-cp.where(k_shiftOrder<1,k_shiftOrder,1)*(-1)**(k_shiftOrder%2)
-        k_inv=k_invShiftOrder*self.numOfAtoms+self.neighborIndexOfCenterAtoms
-        neighborIndexOfNeighborAtomsMod=self.neighborIndexOfNeighborAtoms%self.numOfAtoms
-        for i in range(len(self.centerAtomOrderInNeighborListOfNeighborAtoms)):
-            self.centerAtomOrderInNeighborListOfNeighborAtoms[i]=cp.where(self.neighborListOfAllAtoms[neighborIndexOfNeighborAtomsMod[i]]==k_inv[i])[0][0]
-        #cp.where((self.neighborIndexOfCenterAtoms==self.neighborIndexOfNeighborAtoms[i]%self.numOfAtoms)*(self.neighborIndexOfNeighborAtoms==k_inv[i]))[0][0]
-        #int(np.argwhere((cp.asnumpy(self.neighborIndexOfCenterAtoms)==int(self.neighborIndexOfNeighborAtoms[i]%self.numOfAtoms))*(cp.asnumpy(self.neighborIndexOfNeighborAtoms)==int(k_inv[i]))))            
+    #     '''
+    #     #第二版的方法仍然让人难以忍受其速度，所以寻找第三版完全不需要用到循环，全程矩阵操作的办法！
+    #     #完全采用另外一种方法计算self.centerAtomOrderInNeighborListOfNeighborAtoms
+    #     #这一次直接将之设置成一维的，直接利用cp.where进行计算
+    #     #self.centerAtomOrderInNeighborListOfNeighborAtomsSlow=self.centerAtomOrderInNeighborListOfNeighborAtoms.copy()
+    #     self.centerAtomOrderInNeighborListOfNeighborAtoms=-cp.ones_like(self.neighborIndexOfNeighborAtoms)
+    #     k_shiftOrder=self.neighborIndexOfNeighborAtoms//self.numOfAtoms
+    #     k_invShiftOrder=k_shiftOrder-cp.where(k_shiftOrder<1,k_shiftOrder,1)*(-1)**(k_shiftOrder%2)
+    #     k_inv=k_invShiftOrder*self.numOfAtoms+self.neighborIndexOfCenterAtoms
+    #     neighborIndexOfNeighborAtomsMod=self.neighborIndexOfNeighborAtoms%self.numOfAtoms
+    #     for i in range(len(self.centerAtomOrderInNeighborListOfNeighborAtoms)):
+    #         self.centerAtomOrderInNeighborListOfNeighborAtoms[i]=cp.where(self.neighborListOfAllAtoms[neighborIndexOfNeighborAtomsMod[i]]==k_inv[i])[0][0]
+    #     #cp.where((self.neighborIndexOfCenterAtoms==self.neighborIndexOfNeighborAtoms[i]%self.numOfAtoms)*(self.neighborIndexOfNeighborAtoms==k_inv[i]))[0][0]
+    #     #int(np.argwhere((cp.asnumpy(self.neighborIndexOfCenterAtoms)==int(self.neighborIndexOfNeighborAtoms[i]%self.numOfAtoms))*(cp.asnumpy(self.neighborIndexOfNeighborAtoms)==int(k_inv[i]))))            
 
-        #self.centerAtomOrderInNeighborListOfNeighborAtoms=self.neighborAtomOrderInNeighborListOfCenterAtoms[self.centerAtomOrderInNeighborListOfNeighborAtoms]
-        self.neighborIndexOfNeighborAtoms=neighborIndexOfNeighborAtomsMod
-        '''
+    #     #self.centerAtomOrderInNeighborListOfNeighborAtoms=self.neighborAtomOrderInNeighborListOfCenterAtoms[self.centerAtomOrderInNeighborListOfNeighborAtoms]
+    #     self.neighborIndexOfNeighborAtoms=neighborIndexOfNeighborAtomsMod
+    #     '''
 
-        neighborIndexOfNeighborAtomsMod=self.neighborIndexOfNeighborAtoms%self.numOfAtoms
-        neighborIndexArgsort=((self.neighborIndexOfCenterAtoms<<16)+self.neighborIndexOfNeighborAtoms).argsort()        
-        invNeighborIndexOfNeighborAtoms=self.neighborIndexOfNeighborAtoms//self.numOfAtoms
-        invNeighborIndexOfNeighborAtoms==invNeighborIndexOfNeighborAtoms-cp.where(invNeighborIndexOfNeighborAtoms<1,invNeighborIndexOfNeighborAtoms,1)*(-1)**(invNeighborIndexOfNeighborAtoms%2)
-        invNeighborIndexOfNeighborAtoms=invNeighborIndexOfNeighborAtoms*self.numOfAtoms+self.neighborIndexOfCenterAtoms        
-        invNeighborIndexInvArgsort=((neighborIndexOfNeighborAtomsMod<<16)+invNeighborIndexOfNeighborAtoms).argsort().argsort()
-        self.centerAtomOrderInNeighborListOfNeighborAtoms=self.neighborAtomOrderInNeighborListOfCenterAtoms[neighborIndexArgsort][invNeighborIndexInvArgsort]
-        self.neighborIndexOfNeighborAtoms=neighborIndexOfNeighborAtomsMod
+    #     neighborIndexOfNeighborAtomsMod=self.neighborIndexOfNeighborAtoms%self.numOfAtoms
+    #     neighborIndexArgsort=((self.neighborIndexOfCenterAtoms<<16)+self.neighborIndexOfNeighborAtoms).argsort()        
+    #     invNeighborIndexOfNeighborAtoms=self.neighborIndexOfNeighborAtoms//self.numOfAtoms
+    #     invNeighborIndexOfNeighborAtoms==invNeighborIndexOfNeighborAtoms-cp.where(invNeighborIndexOfNeighborAtoms<1,invNeighborIndexOfNeighborAtoms,1)*(-1)**(invNeighborIndexOfNeighborAtoms%2)
+    #     invNeighborIndexOfNeighborAtoms=invNeighborIndexOfNeighborAtoms*self.numOfAtoms+self.neighborIndexOfCenterAtoms        
+    #     invNeighborIndexInvArgsort=((neighborIndexOfNeighborAtomsMod<<16)+invNeighborIndexOfNeighborAtoms).argsort().argsort()
+    #     self.centerAtomOrderInNeighborListOfNeighborAtoms=self.neighborAtomOrderInNeighborListOfCenterAtoms[neighborIndexArgsort][invNeighborIndexInvArgsort]
+    #     self.neighborIndexOfNeighborAtoms=neighborIndexOfNeighborAtomsMod
             
 
-        '''
-        for i in range(self.numOfAtoms):
-            mask=self.neighborListOfAllAtoms[i]>-1
-            k=self.neighborListOfAllAtoms[i][mask]
-            k_line=k%self.numOfAtoms
-            k_shiftOrder=k//self.numOfAtoms
-            k_invShiftOrder=k_shiftOrder-cp.where(k_shiftOrder<1,k_shiftOrder,1)*(-1)**k_shiftOrder
-            k_inv=k_invShiftOrder*self.numOfAtoms+i
-            invOrder=cp.where(self.neighborListOfAllAtoms[k_line]==k_inv)[0][0]
-            self.centerAtomOrderInNeighborListOfNeighborAtoms[i][mask]=invOrder
-        '''
+    #     '''
+    #     for i in range(self.numOfAtoms):
+    #         mask=self.neighborListOfAllAtoms[i]>-1
+    #         k=self.neighborListOfAllAtoms[i][mask]
+    #         k_line=k%self.numOfAtoms
+    #         k_shiftOrder=k//self.numOfAtoms
+    #         k_invShiftOrder=k_shiftOrder-cp.where(k_shiftOrder<1,k_shiftOrder,1)*(-1)**k_shiftOrder
+    #         k_inv=k_invShiftOrder*self.numOfAtoms+i
+    #         invOrder=cp.where(self.neighborListOfAllAtoms[k_line]==k_inv)[0][0]
+    #         self.centerAtomOrderInNeighborListOfNeighborAtoms[i][mask]=invOrder
+    #     '''
 
                 
 
-        #计算每种原子的mask,以一个len(pm.atomTypeSet) or pm.atomTypeNum*self.numOfAtoms*(1+pm.maxNeighborNum)的mask矩阵来将存储所有的结果,可命名为self.allTypeNeighborMaskArray
-        #然后原来的self.maskDictOfAllAtomTypesInNeighborList可以是指向这个Array部分结果的矩阵
-        self.allTypeNeighborMaskArray=cp.zeros((pm.atomTypeNum,self.numOfAtoms,1+pm.maxNeighborNum),dtype=cp.bool)
-        self.allTypeNeighborMaskArray[:,:,0]=True
-        atomTypeListArray=cp.array(self.atomTypeList)
-        for i in range(pm.atomTypeNum):
-            neighborAtomType=pm.atomType[i]
-            self.allTypeNeighborMaskArray[i][self.neighborIndexOfCenterAtoms,1+self.neighborAtomOrderInNeighborListOfCenterAtoms]=(atomTypeListArray[self.neighborIndexOfNeighborAtoms]==neighborAtomType)
-            self.maskDictOfAllAtomTypesInNeighborList[neighborAtomType]=self.allTypeNeighborMaskArray[i,:,1:]
+    #     #计算每种原子的mask,以一个len(pm.atomTypeSet) or pm.atomTypeNum*self.numOfAtoms*(1+pm.maxNeighborNum)的mask矩阵来将存储所有的结果,可命名为self.allTypeNeighborMaskArray
+    #     #然后原来的self.maskDictOfAllAtomTypesInNeighborList可以是指向这个Array部分结果的矩阵
+    #     self.allTypeNeighborMaskArray=cp.zeros((pm.atomTypeNum,self.numOfAtoms,1+pm.maxNeighborNum),dtype=cp.bool)
+    #     self.allTypeNeighborMaskArray[:,:,0]=True
+    #     atomTypeListArray=cp.array(self.atomTypeList)
+    #     for i in range(pm.atomTypeNum):
+    #         neighborAtomType=pm.atomType[i]
+    #         self.allTypeNeighborMaskArray[i][self.neighborIndexOfCenterAtoms,1+self.neighborAtomOrderInNeighborListOfCenterAtoms]=(atomTypeListArray[self.neighborIndexOfNeighborAtoms]==neighborAtomType)
+    #         self.maskDictOfAllAtomTypesInNeighborList[neighborAtomType]=self.allTypeNeighborMaskArray[i,:,1:]
 
 
-        '''
-        #此为原来计算self.maskDictOfAllAtomTypesInNeighobrList的方法，由于在后续计算中不适用,被废除
-        for neighborAtomType in pm.atomTypeSet:
-            if hasattr(cp,'isin'):
-                self.maskDictOfAllAtomTypesInNeighborList[neighborAtomType]=(cp.asarray((self.neighborListOfAllAtoms>-1)*(cp.isin(self.neighborListOfAllAtoms%self.numOfAtoms,self.fromSystem.atomCategoryDict[neighborAtomType]))))
-            else:
-                self.maskDictOfAllAtomTypesInNeighborList[neighborAtomType]=(cp.asarray((self.neighborListOfAllAtoms>-1)*\
-                            cp.asarray(np.isin(cp.asnumpy(self.neighborListOfAllAtoms%self.numOfAtoms),cp.asnumpy(self.fromSystem.atomCategoryDict[neighborAtomType])))))
-        '''
+    #     '''
+    #     #此为原来计算self.maskDictOfAllAtomTypesInNeighobrList的方法，由于在后续计算中不适用,被废除
+    #     for neighborAtomType in pm.atomTypeSet:
+    #         if hasattr(cp,'isin'):
+    #             self.maskDictOfAllAtomTypesInNeighborList[neighborAtomType]=(cp.asarray((self.neighborListOfAllAtoms>-1)*(cp.isin(self.neighborListOfAllAtoms%self.numOfAtoms,self.fromSystem.atomCategoryDict[neighborAtomType]))))
+    #         else:
+    #             self.maskDictOfAllAtomTypesInNeighborList[neighborAtomType]=(cp.asarray((self.neighborListOfAllAtoms>-1)*\
+    #                         cp.asarray(np.isin(cp.asnumpy(self.neighborListOfAllAtoms%self.numOfAtoms),cp.asnumpy(self.fromSystem.atomCategoryDict[neighborAtomType])))))
+    #     '''
         
         
         
@@ -615,43 +615,43 @@ class Image():
             
 
 
-        self.neighborDistanceArrayOfAllAtoms=cp.sqrt(cp.sum(self.neighborDistanceVectArrayOfAllAtoms**2,axis=2))
-        self.neighborUnitVectArrayOfAllAtoms=cp.zeros_like(self.neighborDistanceVectArrayOfAllAtoms)
-        mask=(self.neighborDistanceArrayOfAllAtoms>0)
-        self.neighborUnitVectArrayOfAllAtoms[mask]=self.neighborDistanceVectArrayOfAllAtoms[mask]/cp.expand_dims(self.neighborDistanceArrayOfAllAtoms[mask],-1)   #不同维数矩阵的自动broad_cast计算似乎要求维数少的那一方的所有维数作为最后几维
+    #     self.neighborDistanceArrayOfAllAtoms=cp.sqrt(cp.sum(self.neighborDistanceVectArrayOfAllAtoms**2,axis=2))
+    #     self.neighborUnitVectArrayOfAllAtoms=cp.zeros_like(self.neighborDistanceVectArrayOfAllAtoms)
+    #     mask=(self.neighborDistanceArrayOfAllAtoms>0)
+    #     self.neighborUnitVectArrayOfAllAtoms[mask]=self.neighborDistanceVectArrayOfAllAtoms[mask]/cp.expand_dims(self.neighborDistanceArrayOfAllAtoms[mask],-1)   #不同维数矩阵的自动broad_cast计算似乎要求维数少的那一方的所有维数作为最后几维
 
         
 
-        abDistanceVectArray=self.neighborDistanceVectArrayOfAllAtoms[:,:,cp.newaxis,:]-self.neighborDistanceVectArrayOfAllAtoms[:,cp.newaxis,:,:] #此处究竟哪个在前哪个在后合适上需要研究
+    #     abDistanceVectArray=self.neighborDistanceVectArrayOfAllAtoms[:,:,cp.newaxis,:]-self.neighborDistanceVectArrayOfAllAtoms[:,cp.newaxis,:,:] #此处究竟哪个在前哪个在后合适上需要研究
 
-        mask=self.neighborDistanceArrayOfAllAtoms==0
-        abDistanceVectArray[mask]=0
-        abDistanceVectArray.transpose(0,2,1,3)[mask]=0
-        self.abDistanceArray=cp.sqrt(cp.sum(abDistanceVectArray**2,axis=3))
+    #     mask=self.neighborDistanceArrayOfAllAtoms==0
+    #     abDistanceVectArray[mask]=0
+    #     abDistanceVectArray.transpose(0,2,1,3)[mask]=0
+    #     self.abDistanceArray=cp.sqrt(cp.sum(abDistanceVectArray**2,axis=3))
         
-        #mask=(self.abDistanceArray<pm.rMin)+(self.abDistanceArray>pm.rCut)
-        #abDistanceVectArray[mask]=0
-        #self.abDistanceArray[mask]=0
+    #     #mask=(self.abDistanceArray<pm.rMin)+(self.abDistanceArray>pm.rCut)
+    #     #abDistanceVectArray[mask]=0
+    #     #self.abDistanceArray[mask]=0
 
-        self.abUnitVectArray=cp.zeros((self.numOfAtoms,pm.maxNeighborNum,pm.maxNeighborNum,3))
-        mask=self.abDistanceArray>0
-        self.abUnitVectArray[mask]=abDistanceVectArray[mask]/cp.expand_dims(self.abDistanceArray[mask],-1)
+    #     self.abUnitVectArray=cp.zeros((self.numOfAtoms,pm.maxNeighborNum,pm.maxNeighborNum,3))
+    #     mask=self.abDistanceArray>0
+    #     self.abUnitVectArray[mask]=abDistanceVectArray[mask]/cp.expand_dims(self.abDistanceArray[mask],-1)
 
 
-        self.basic2bFeatArrayOfAllNeighborPairs=self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf2bFeat)#此处对整个近邻距离矩阵用basicFunc计算一个结果储存,是2bFeat相关
-        self.basic3bFeatArrayOfAllNeighborPairs=self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf3bFeat)#此处对整个近邻距离矩阵用basicFunc计算一个结果储存
-        self.basic3bFeatArrayOfAllABpairs=self.basicFunc(self.abDistanceArray,pm.mulFactorVectOf3bFeat,pm.Rcut2)  #此处对整个的三体的ab距离矩阵用basicFunc计算一个结果储存,是3bFeat相关,2b和3b不一样
+    #     self.basic2bFeatArrayOfAllNeighborPairs=self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf2bFeat)#此处对整个近邻距离矩阵用basicFunc计算一个结果储存,是2bFeat相关
+    #     self.basic3bFeatArrayOfAllNeighborPairs=self.basicFunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf3bFeat)#此处对整个近邻距离矩阵用basicFunc计算一个结果储存
+    #     self.basic3bFeatArrayOfAllABpairs=self.basicFunc(self.abDistanceArray,pm.mulFactorVectOf3bFeat,pm.Rcut2)  #此处对整个的三体的ab距离矩阵用basicFunc计算一个结果储存,是3bFeat相关,2b和3b不一样
         
 
-        basic2bDfeatArrayOfAllNeighborPairs=self.basicDfunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf2bFeat)
-        self.allNeighborPairs2bDfeatArray=basic2bDfeatArrayOfAllNeighborPairs[:,:,:,cp.newaxis]*self.neighborUnitVectArrayOfAllAtoms[:,:,cp.newaxis,:]
-        #self.allNeighborPairs2bDfeatArray=cp.einsum('ija,ijr->ijar',basic2bDfeatArrayOfAllNeighborPairs,self.neighborUnitVectArrayOfAllAtoms)
-        basic3bDfeatArrayOfAllNeighborPairs=self.basicDfunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf3bFeat)
-        self.allNeighborPairs3bDfeatArray=basic3bDfeatArrayOfAllNeighborPairs[:,:,:,cp.newaxis]*self.neighborUnitVectArrayOfAllAtoms[:,:,cp.newaxis,:]
-        #self.allNeighborPairs3bDfeatArray=cp.einsum('ija,ijr->ijar',basic3bDfeatArrayOfAllNeighborPairs,self.neighborUnitVectArrayOfAllAtoms)
-        basic3bDfeatArrayOfAllABpairs=self.basicDfunc(self.abDistanceArray,pm.mulFactorVectOf3bFeat,pm.Rcut2)
-        self.allABpairs3bDfeatArray=basic3bDfeatArrayOfAllABpairs[:,:,:,:,cp.newaxis]*self.abUnitVectArray[:,:,:,cp.newaxis,:]
-        #self.allABpairs3bDfeatArray=cp.einsum('ijka,ijkr->ijkar',basic3bDfeatArrayOfAllABpairs,self.abUnitVectArray)
+    #     basic2bDfeatArrayOfAllNeighborPairs=self.basicDfunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf2bFeat)
+    #     self.allNeighborPairs2bDfeatArray=basic2bDfeatArrayOfAllNeighborPairs[:,:,:,cp.newaxis]*self.neighborUnitVectArrayOfAllAtoms[:,:,cp.newaxis,:]
+    #     #self.allNeighborPairs2bDfeatArray=cp.einsum('ija,ijr->ijar',basic2bDfeatArrayOfAllNeighborPairs,self.neighborUnitVectArrayOfAllAtoms)
+    #     basic3bDfeatArrayOfAllNeighborPairs=self.basicDfunc(self.neighborDistanceArrayOfAllAtoms,pm.mulFactorVectOf3bFeat)
+    #     self.allNeighborPairs3bDfeatArray=basic3bDfeatArrayOfAllNeighborPairs[:,:,:,cp.newaxis]*self.neighborUnitVectArrayOfAllAtoms[:,:,cp.newaxis,:]
+    #     #self.allNeighborPairs3bDfeatArray=cp.einsum('ija,ijr->ijar',basic3bDfeatArrayOfAllNeighborPairs,self.neighborUnitVectArrayOfAllAtoms)
+    #     basic3bDfeatArrayOfAllABpairs=self.basicDfunc(self.abDistanceArray,pm.mulFactorVectOf3bFeat,pm.Rcut2)
+    #     self.allABpairs3bDfeatArray=basic3bDfeatArrayOfAllABpairs[:,:,:,:,cp.newaxis]*self.abUnitVectArray[:,:,:,cp.newaxis,:]
+    #     #self.allABpairs3bDfeatArray=cp.einsum('ijka,ijkr->ijkar',basic3bDfeatArrayOfAllABpairs,self.abUnitVectArray)
         
        
 

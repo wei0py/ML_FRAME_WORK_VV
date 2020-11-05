@@ -12,8 +12,11 @@ from ase.cell import Cell
 from ase.atoms import Atoms
 from ase.constraints import (voigt_6_to_full_3x3_stress,
                              full_3x3_to_voigt_6_stress)
+import math                        
 
 from calc_feature_nn import calc_feature
+from calc_ftype1 import calc_ftype1
+from calc_ftype2 import calc_ftype2
 from nn_model_cupy import NNapiBase #,EiNN_cupy
 # from minilib.get_util_info import getGpuInfo
 
@@ -53,8 +56,14 @@ class MdImage(Atoms,Image,NNapiBase):
         NNapiBase.__init__(self,nn=nn,data_scaler=data_scaler)
         
         self.isCheckVar=isCheckVar
-        calc_feature.load_model()
-        calc_feature.set_image_info(np.array(atomTypeList),True)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.load_model()
+                calc_ftype1.set_image_info(np.array(atomTypeList),True)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.load_model()
+                calc_ftype2.set_image_info(np.array(atomTypeList),True)
+
         self.isNewStep=True
         return self
 
@@ -90,8 +99,13 @@ class MdImage(Atoms,Image,NNapiBase):
         
         self.isCheckVar=isCheckVar
         # calc_feature.set_paths(pm.fitModelDir)
-        calc_feature.load_model()
-        calc_feature.set_image_info(np.array(atomTypeList),True)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.load_model()
+                calc_ftype1.set_image_info(np.array(atomTypeList),True)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.load_model()
+                calc_ftype2.set_image_info(np.array(atomTypeList),True)
         self.isNewStep=True
         return self
 
@@ -151,8 +165,13 @@ class MdImage(Atoms,Image,NNapiBase):
         
         self.isCheckVar=isCheckVar
         
-        calc_feature.load_model()
-        calc_feature.set_image_info(np.array(atomTypeList),True)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.load_model()
+                calc_ftype1.set_image_info(np.array(atomTypeList),True)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.load_model()
+                calc_ftype2.set_image_info(np.array(atomTypeList),True)
 
         self.isNewStep=True
         return self
@@ -245,15 +264,15 @@ class MdImage(Atoms,Image,NNapiBase):
                 atomConfigFile.write(str(self.atomTypeList[i])+'    '+str(energies[i])+' \n')
             atomConfigFile.write('-'*80+'\n')                
             
-    def calAllNeighborStruct(self,isSave=False,isCheckFile=True,rMin=pm.rMin,rCut=pm.Rcut):
-        Image.calAllNeighborStruct(self,isSave,isCheckFile,rMin,rCut)
-        if not pm.isFixedMaxNeighborNumForMd:
-            self.preMaxNeighborNum=0
-        pm.maxNeighborNum=int(self.neighborNumOfAllAtoms.max())
-        if pm.maxNeighborNum!=self.preMaxNeighborNum:
-            mempool = cp.get_default_memory_pool()
-            mempool.free_all_blocks()
-        self.preMaxNeighborNum=pm.maxNeighborNum
+    # def calAllNeighborStruct(self,isSave=False,isCheckFile=True,rMin=pm.rMin,rCut=pm.Rc_M):
+    #     Image.calAllNeighborStruct(self,isSave,isCheckFile,rMin,rCut)
+    #     if not pm.isFixedMaxNeighborNumForMd:
+    #         self.preMaxNeighborNum=0
+    #     pm.maxNeighborNum=int(self.neighborNumOfAllAtoms.max())
+    #     if pm.maxNeighborNum!=self.preMaxNeighborNum:
+    #         mempool = cp.get_default_memory_pool()
+    #         mempool.free_all_blocks()
+    #     self.preMaxNeighborNum=pm.maxNeighborNum
     
     def set_pos_cell(self):
         
@@ -274,12 +293,26 @@ class MdImage(Atoms,Image,NNapiBase):
     def calc_feat(self):
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
-        calc_feature.gen_feature(cell,pos)
-       
-        feat=np.array(calc_feature.feat).transpose()
-        dfeat=np.array(calc_feature.dfeat).transpose(1,2,0,3)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.gen_feature(cell,pos)
+                feat_tmp=np.array(calc_ftype1.feat).transpose()
+                dfeat_tmp=np.array(calc_ftype1.dfeat).transpose(1,2,0,3)
+                nblist = np.array(calc_ftype1.list_neigh_alltypem).transpose().astype(int)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.gen_feature(cell,pos)
+                feat_tmp=np.array(calc_ftype2.feat).transpose()
+                dfeat_tmp=np.array(calc_ftype2.dfeat).transpose(1,2,0,3)
+                nblist = np.array(calc_ftype2.list_neigh_alltypem).transpose().astype(int)
+            if i==0:
+                feat=feat_tmp
+                dfeat=dfeat_tmp
+            else:
+                feat=np.concatenate((feat,feat_tmp),axis=1)
+                dfeat=np.concatenate((dfeat,dfeat_tmp),axis=2)
+
         # num_neigh_alltype=np.array(calc_feature.num_neigh_alltype)
-        nblist = np.array(calc_feature.list_neigh_alltype).transpose().astype(int)
+        
        
         return feat,dfeat,nblist
 
@@ -295,23 +328,70 @@ class MdImage(Atoms,Image,NNapiBase):
         if hasattr(self,'neighborDistanceVectArrayOfAllAtoms'):
             del self.neighborDistanceVectArrayOfAllAtoms
 #TODO:
-        cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
-        pos=np.asfortranarray(self.get_scaled_positions(True).T)
+        
         feat,dfeat,nblist=self.calc_feat()
         # print(cell)
         # print(pos)
-        # print(np.shape(feat))
+        # print(np.shape(dfeat))
         itype=self.numbers
         feat_scaled = self.ds.pre_feat(feat, itype)
                 
         engy_out = self.nn.getEi(feat_scaled, itype)
         Ep = self.ds.post_engy(engy_out, itype)
-        self.energies=cp.asnumpy(Ep)
+        self.energies=cp.asnumpy(Ep).reshape(-1)
         self.etot=cp.sum(Ep)
 
         dfeat_scaled = self.ds.pre_dfeat(dfeat, itype[:,np.newaxis], nblist)
         f_out    = self.nn.getFi(feat_scaled, dfeat_scaled, nblist, itype) #TODO:
         Fp = self.ds.post_fors(f_out, itype)
+        # TODO:
+        cell=cp.asnumpy(self.cupyCell)
+        pos=self.get_scaled_positions(True)
+        rad_atom=np.array(pm.fortranFitAtomRadii)   
+        wp_atom=np.array(pm.fortranFitAtomRepulsingEnergies)
+        iatom_type=np.zeros_like(itype)
+        for m in range(len(itype)):
+            for k in range(len(pm.atomType)):
+                if itype[m]==pm.atomType[k]:
+                    iatom_type[m]=k
+
+        for i in range(len(itype)):
+            rad1=rad_atom[iatom_type[i]]
+            dE=0.0
+            dFx=0.0
+            dFy=0.0
+            dFz=0.0
+            for j in nblist[i,:]:
+                if (j-1) != i and j > 0:
+                    rad2 = rad_atom[iatom_type[j-1]]
+                    rad=rad1+rad2
+                    dx1=(pos[j-1,0]-pos[i,0])%1.0
+                    if (abs(dx1-1) < abs(dx1)):
+                        dx1=dx1-1
+                    dx2=(pos[j-1,1]-pos[i,1])%1.0
+                    if (abs(dx2-1) < abs(dx2)):
+                        dx2=dx2-1
+                    dx3=(pos[j-1,2]-pos[i,2])%1.0
+                    if (abs(dx3-1) < abs(dx3)):
+                        dx3=dx3-1
+                    dx=cell[0,0]*dx1+cell[1,0]*dx2+cell[2,0]*dx3
+                    dy=cell[0,1]*dx1+cell[1,1]*dx2+cell[2,1]*dx3
+                    dz=cell[0,2]*dx1+cell[1,2]*dx2+cell[2,2]*dx3
+                    dd=math.sqrt(dx**2+dy**2+dz**2)
+                    if(dd < 2*rad):
+                        w22=math.sqrt(wp_atom[iatom_type[i]]*wp_atom[iatom_type[j-1]])
+                        yy=math.pi*dd/(4*rad)
+                        dE=dE+0.5*4*w22*(rad/dd)**12*math.cos(yy)**2
+                        dEdd=4*w22*(-12*(rad/dd)**12/dd*math.cos(yy)**2-(math.pi/(2*rad))*math.cos(yy)*math.sin(yy)*(rad/dd)**12)
+
+                        dFx=dFx-dEdd*dx/dd       #! note, -sign, because dx=d(j)-x(i)
+                        dFy=dFy-dEdd*dy/dd
+                        dFz=dFz-dEdd*dz/dd
+            Ep[i]=Ep[i]+dE
+            Fp[i,0]=Fp[i,0]+dFx
+            Fp[i,1]=Fp[i,1]+dFy
+            Fp[i,2]=Fp[i,2]+dFz
+
         self.forces = - cp.asnumpy(Fp)
 
         #print("cal feat time: ",time.time()-start)
@@ -386,6 +466,42 @@ class MdImage(Atoms,Image,NNapiBase):
         engy_out = self.nn.getEi(feat_scaled, itype)
         Ep = self.ds.post_engy(engy_out, itype)
 
+        cell=cp.asnumpy(self.cupyCell)
+        pos=self.get_scaled_positions(True)
+        rad_atom=np.array(pm.fortranFitAtomRadii)   
+        wp_atom=np.array(pm.fortranFitAtomRepulsingEnergies)
+        iatom_type=np.zeros_like(itype)
+        for m in range(len(itype)):
+            for k in range(len(pm.atomType)):
+                if itype[m]==pm.atomType[k]:
+                    iatom_type[m]=k
+
+        for i in range(len(itype)):
+            rad1=rad_atom[iatom_type[i]]
+            dE=0.0
+            for j in nblist[i,:]:
+                if (j-1) != i and j > 0:
+                    rad2 = rad_atom[iatom_type[j-1]]
+                    rad=rad1+rad2
+                    dx1=(pos[j-1,0]-pos[i,0])%1.0
+                    if (abs(dx1-1) < abs(dx1)):
+                        dx1=dx1-1
+                    dx2=(pos[j-1,1]-pos[i,1])%1.0
+                    if (abs(dx2-1) < abs(dx2)):
+                        dx2=dx2-1
+                    dx3=(pos[j-1,2]-pos[i,2])%1.0
+                    if (abs(dx3-1) < abs(dx3)):
+                        dx3=dx3-1
+                    dx=cell[0,0]*dx1+cell[1,0]*dx2+cell[2,0]*dx3
+                    dy=cell[0,1]*dx1+cell[1,1]*dx2+cell[2,1]*dx3
+                    dz=cell[0,2]*dx1+cell[1,2]*dx2+cell[2,2]*dx3
+                    dd=math.sqrt(dx**2+dy**2+dz**2)
+                    if(dd < 2*rad):
+                        w22=math.sqrt(wp_atom[iatom_type[i]]*wp_atom[iatom_type[j-1]])
+                        yy=math.pi*dd/(4*rad)
+                        dE=dE+0.5*4*w22*(rad/dd)**12*math.cos(yy)**2
+            Ep[i]=Ep[i]+dE
+
         #print("cal feat time: ",time.time()-start)
         if self.isProfile:
             self.calcFeatTime+=time.time()-start
@@ -438,7 +554,7 @@ class MdImage(Atoms,Image,NNapiBase):
             stress[i, j] = (eplus - eminus) / (4 * d * V)
             stress[j, i] = stress[i, j]
         atoms.set_cell(cell, scale_atoms=True)
-        
+        self.set_pos_cell()
         if voigt:
             return stress.flat[[0, 4, 8, 5, 2, 1]]
         else:
@@ -461,7 +577,7 @@ class MdImage(Atoms,Image,NNapiBase):
         # if self._calc is None:
         #     raise RuntimeError('Atoms object has no calculator.')
 
-        stress = self.calculate_numerical_stress(self)
+        stress = self.calculate_numerical_stress(self,voigt=voigt)
         shape = stress.shape
 
         if shape == (3, 3):

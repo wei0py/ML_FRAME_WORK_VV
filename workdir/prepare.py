@@ -154,12 +154,18 @@ def writeFitInput():
                        ', '+str(pm.fortranFitRidgePenaltyTerm)+'        ! E_weight ,Etot_weight, F_weight, delta\n')
                         
 
-def readFeatnum(infoPath):
-    with open(infoPath,'r') as sourceFile:
-        pm.realFeatNum=int(sourceFile.readline().split()[0])
+def readFeatnum():
+    collectAllSourceFiles()
+    featnum=0
+    for i in pm.use_Ftype:
+        with open(os.path.join(pm.sourceFileList[0],'info.txt.Ftype'+str(i)),'r') as sourceFile:
+            featnum=featnum+int(sourceFile.readline().split()[0])
+    
+    pm.realFeatNum=featnum
+    pm.nFeats=np.array([pm.realFeatNum,pm.realFeatNum,pm.realFeatNum])
             # pm.fortranFitFeatNum2[i]=pm.fortranFitFeatNum0[i]
-    pm.fortranFitFeatNum0=pm.realFeatNum*np.ones((pm.atomTypeNum,),np.int32)
-    pm.fortranFitFeatNum2=(pm.fortranFitFeatNum0*1.0).astype(np.int32)
+    # pm.fortranFitFeatNum0=pm.realFeatNum*np.ones((pm.atomTypeNum,),np.int32)
+    # pm.fortranFitFeatNum2=(pm.fortranFitFeatNum0*1.0).astype(np.int32)
     
 def calFeatGrid():
     '''

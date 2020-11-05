@@ -13,7 +13,8 @@ if pm.tf_dtype == 'float32' :
 else:
     tf_dtype = tf.float64
     print('info: tf.dtype = tf.float64 in Tensorflow trainning, it may be slower.')
-
+import prepare as pp
+pp.readFeatnum()
 #===============================================================================
 class EiNN:
     """

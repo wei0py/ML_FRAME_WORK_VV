@@ -1,4 +1,4 @@
-module calc_feature_Ftype1
+module calc_ftype1
 
     IMPLICIT NONE
     INTEGER :: ierr
@@ -249,6 +249,7 @@ subroutine gen_feature(AL,xatom)
       num_neigh_alltype=0
       max_neigh_M=-1
       num_neigh_alltypeM=0
+      list_neigh_alltypeM=0
 
       do iat=1,natom
       list_neigh_alltype(1,iat)=iat
@@ -341,4 +342,4 @@ subroutine gen_feature(AL,xatom)
 
 end subroutine gen_feature
 
-end module calc_feature_Ftype1
+end module calc_ftype1

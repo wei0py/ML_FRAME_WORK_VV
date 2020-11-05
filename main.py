@@ -35,7 +35,6 @@ if pm.isCalcFeat:
     os.system('cp '+os.path.abspath(pm.fbinListPath)+' ./input/')
     
     for i in range(pm.atomTypeNum):
-
         if pm.Ftype1_para['iflag_grid'][i] == 3 or pm.Ftype2_para['iflag_grid'][i] == 3:
             calFeatGrid=True
     if calFeatGrid:
@@ -64,8 +63,8 @@ if pm.isClassify:
 
     shift=True
     if shift:
-        pp.collectAllSourceFiles()
-        pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
+        # pp.collectAllSourceFiles()
+        pp.readFeatnum()
         import fortran_fitting as ff
         ff.makeFitDirAndCopySomeFiles()
         # readFittingParameters()
@@ -93,7 +92,7 @@ if pm.isClassify:
 
 if pm.isFitLinModel:
     import fortran_fitting as fortranfit
-    pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
+    # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
     fortranfit.fit()
 
 if pm.isRunMd:

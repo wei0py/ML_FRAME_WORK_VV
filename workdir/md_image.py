@@ -13,7 +13,9 @@ from ase.atoms import Atoms
 from ase.constraints import (voigt_6_to_full_3x3_stress,
                              full_3x3_to_voigt_6_stress)
 
-from calc_feature import calc_feature
+# from calc_feature import calc_feature
+from calc_ftype1 import calc_ftype1
+from calc_ftype2 import calc_ftype2
 from calc_lin import calc_lin
 from calc_clst import calc_clst
 
@@ -57,8 +59,15 @@ class MdImage(Atoms,Image):
         calc.set_paths(pm.fitModelDir)
         calc.load_model()
         calc.set_image_info(np.array(anImage.atomTypeList),True)
-        calc_feature.load_model()
-        calc_feature.set_image_info(np.array(atomTypeList),True)
+        # calc_feature.load_model()
+        # calc_feature.set_image_info(np.array(atomTypeList),True)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.load_model()
+                calc_ftype1.set_image_info(np.array(atomTypeList),True)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.load_model()
+                calc_ftype2.set_image_info(np.array(atomTypeList),True)
         self.isNewStep=True
         return self
 
@@ -96,8 +105,15 @@ class MdImage(Atoms,Image):
         calc.load_model()
         calc.set_image_info(np.array(atomTypeList),True)
         # calc_feature.set_paths(pm.fitModelDir)
-        calc_feature.load_model()
-        calc_feature.set_image_info(np.array(atomTypeList),True)
+        # calc_feature.load_model()
+        # calc_feature.set_image_info(np.array(atomTypeList),True)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.load_model()
+                calc_ftype1.set_image_info(np.array(atomTypeList),True)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.load_model()
+                calc_ftype2.set_image_info(np.array(atomTypeList),True)
         self.isNewStep=True
         return self
 
@@ -158,9 +174,15 @@ class MdImage(Atoms,Image):
         calc.set_paths(pm.fitModelDir)
         calc.load_model()
         calc.set_image_info(np.array(atomTypeList),True)
-        calc_feature.load_model()
-        calc_feature.set_image_info(np.array(atomTypeList),True)
-
+        # calc_feature.load_model()
+        # calc_feature.set_image_info(np.array(atomTypeList),True)
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.load_model()
+                calc_ftype1.set_image_info(np.array(atomTypeList),True)
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.load_model()
+                calc_ftype2.set_image_info(np.array(atomTypeList),True)
         self.isNewStep=True
         return self
             
@@ -252,15 +274,15 @@ class MdImage(Atoms,Image):
                 atomConfigFile.write(str(self.atomTypeList[i])+'    '+str(energies[i])+' \n')
             atomConfigFile.write('-'*80+'\n')                
             
-    def calAllNeighborStruct(self,isSave=False,isCheckFile=True,rMin=pm.rMin,rCut=pm.Rcut):
-        Image.calAllNeighborStruct(self,isSave,isCheckFile,rMin,rCut)
-        if not pm.isFixedMaxNeighborNumForMd:
-            self.preMaxNeighborNum=0
-        pm.maxNeighborNum=int(self.neighborNumOfAllAtoms.max())
-        if pm.maxNeighborNum!=self.preMaxNeighborNum:
-            mempool = cp.get_default_memory_pool()
-            mempool.free_all_blocks()
-        self.preMaxNeighborNum=pm.maxNeighborNum
+    # def calAllNeighborStruct(self,isSave=False,isCheckFile=True,rMin=pm.rMin,rCut=pm.Rc_M):
+    #     Image.calAllNeighborStruct(self,isSave,isCheckFile,rMin,rCut)
+    #     if not pm.isFixedMaxNeighborNumForMd:
+    #         self.preMaxNeighborNum=0
+    #     pm.maxNeighborNum=int(self.neighborNumOfAllAtoms.max())
+    #     if pm.maxNeighborNum!=self.preMaxNeighborNum:
+    #         mempool = cp.get_default_memory_pool()
+    #         mempool.free_all_blocks()
+    #     self.preMaxNeighborNum=pm.maxNeighborNum
     
     def set_pos_cell(self):
         
@@ -281,22 +303,30 @@ class MdImage(Atoms,Image):
     def calc_feat(self):
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
-        calc_feature.gen_feature(cell,pos)
-        # feat=self.calc_feature()
-        # feat=np.asfortranarray(self.calFeat().transpose())
-        # dfeat=self.calDfeat()
-        # dfeat=np.asfortranarray(dfeat.transpose(2,0,1,3))
-        # nblist=np.asfortranarray(cp.asnumpy(self.neighborListOfAllAtoms).transpose()+1)
-        # nbnum=np.asfortranarray(cp.asnumpy(self.neighborNumOfAllAtoms+1))
-        feat=calc_feature.feat
-        num_tmp=calc_feature.num_tmp
-        dfeat_tmp=calc_feature.dfeat_tmp
-        iat_tmp=calc_feature.iat_tmp
-        jneigh_tmp=calc_feature.jneigh_tmp
-        ifeat_tmp=calc_feature.ifeat_tmp
-        num_neigh_alltype=calc_feature.num_neigh_alltype
-        list_neigh_alltype=calc_feature.list_neigh_alltype
-        return feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh_alltype,list_neigh_alltype
+
+        for i in range(len(pm.use_Ftype)):
+            if pm.use_Ftype[i]==1:
+                calc_ftype1.gen_feature(cell,pos)
+                feat_tmp=np.array(calc_ftype1.feat).transpose()
+                dfeat_tmp=np.array(calc_ftype1.dfeat).transpose(1,2,0,3)
+                num_neigh_alltypeM=calc_ftype1.num_neigh_alltypem
+                list_neigh_alltypeM = calc_ftype1.list_neigh_alltypem
+            if pm.use_Ftype[i]==2:
+                calc_ftype2.gen_feature(cell,pos)
+                feat_tmp=np.array(calc_ftype2.feat).transpose()
+                dfeat_tmp=np.array(calc_ftype2.dfeat).transpose(1,2,0,3)
+                num_neigh_alltypeM=calc_ftype2.num_neigh_alltypem
+                list_neigh_alltypeM = calc_ftype2.list_neigh_alltypem
+            if i==0:
+                feat=feat_tmp
+                dfeat=dfeat_tmp
+            else:
+                feat=np.concatenate((feat,feat_tmp),axis=1)
+                dfeat=np.concatenate((dfeat,dfeat_tmp),axis=2)
+        feat=np.asfortranarray(feat.transpose())
+        dfeat=np.asfortranarray(dfeat.transpose(2,0,1,3))
+
+        return feat,dfeat,num_neigh_alltypeM,list_neigh_alltypeM
 
     def calcEnergiesForces(self):
         
@@ -313,26 +343,15 @@ class MdImage(Atoms,Image):
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
 
-        feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh_alltype,list_neigh_alltype=self.calc_feat()
+        feat,dfeat,num_neigh_alltypeM,list_neigh_alltypeM=self.calc_feat()
 
         #print("cal feat time: ",time.time()-start)
         if self.isProfile:
             self.calcFeatTime+=time.time()-start
             star=time.time()
-        # if self.calc==calc_e and self.isCheckVar:
-        #     self.calc.calculate_var(feat,nbnum,nblist)
-        #     if self.calc.flag_of_types.max()>0:
-        #         '''
-        #         print("Warning: There are some atoms whose configration can't be described!")
-        #         print("flag_of_types:")
-        #         print(self.calc.flag_of_types)
-        #         print("var_of_atoms.max(),var_of_atoms.sum/natoms")
-        #         print(self.calc.var_of_atoms.max(),self.calc.var_of_atoms.sum()/len(self))
-        #         print(self.calc.var_of_atoms)
-        #         '''
-        #         pass
 
-        self.calc.cal_energy_force(feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh_alltype,list_neigh_alltype,cell,pos)
+
+        self.calc.cal_energy_force(feat,dfeat,num_neigh_alltypeM,list_neigh_alltypeM,cell,pos)
 
         self.etot=float(self.calc.etot_pred)
         self.energies=np.array(self.calc.energy_pred)
@@ -395,14 +414,14 @@ class MdImage(Atoms,Image):
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
       
-        feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh_alltype,list_neigh_alltype=self.calc_feat()
+        feat,dfeat,num_neigh_alltype,list_neigh_alltype=self.calc_feat()
 
         #print("cal feat time: ",time.time()-start)
         if self.isProfile:
             self.calcFeatTime+=time.time()-start
             star=time.time()
  
-        self.calc.cal_only_energy(feat,num_tmp,dfeat_tmp,iat_tmp,jneigh_tmp,ifeat_tmp,num_neigh_alltype,list_neigh_alltype,cell,pos)
+        self.calc.cal_only_energy(feat,dfeat,num_neigh_alltype,list_neigh_alltype,cell,pos)
 
         etot=float(self.calc.etot_pred)
         # energies=np.array(self.calc.energy_pred)
@@ -458,6 +477,7 @@ class MdImage(Atoms,Image):
             stress[i, j] = (eplus - eminus) / (4 * d * V)
             stress[j, i] = stress[i, j]
         atoms.set_cell(cell, scale_atoms=True)
+        self.set_pos_cell()
         # self.isNewStep=False
         if voigt:
             return stress.flat[[0, 4, 8, 5, 2, 1]]
@@ -481,7 +501,7 @@ class MdImage(Atoms,Image):
         # if self._calc is None:
         #     raise RuntimeError('Atoms object has no calculator.')
 
-        stress = self.calculate_numerical_stress(self)
+        stress = self.calculate_numerical_stress(self,voigt=voigt)
         shape = stress.shape
 
         if shape == (3, 3):

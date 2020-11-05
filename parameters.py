@@ -105,9 +105,9 @@ fortranFitRidgePenaltyTerm=0.0001               #fortran fitting时最后岭回�
 #*********************** for MD **********************
 
 #以下部分为md设置的参数 
-mdCalcModel='clst'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'clst'
+mdCalcModel='lin'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'clst'
 mdRunModel='nvt'                                #md运行时的模型,'nve' or 'nvt' or 'npt', default:'nve'
-mdStepNum=8000                                  #md运行的步数,default:1000
+mdStepNum=4000                                  #md运行的步数,default:1000
 mdStepTime=0.1                                  #md运行时一步的时长(fs), default:1.0
 mdStartTemperature=300                          #md运行时的初始温度
 mdEndTemperature=300                            #md运行采用'nvt'模型时，稳定温度(or npt)
@@ -162,7 +162,7 @@ rtLossE      = 0.8     # weight for energy, NN fitting 各个原子能量所占�
 rtLossF      = 0.2     # weight for force, NN fitting 各个原子所受力所占的权重
 bias_corr = True
 #epochs_pretrain = 1001
-epochs_alltrain = 10001     # energy 训练循环次数
+epochs_alltrain = 1001     # energy 训练循环次数
 epochs_Fi_train = 101       # force+energy 训练循环次数 
 
 iFi_repeat      = 1
@@ -172,8 +172,8 @@ fMAE_err = 0.02 # eV/Ang
 
 #************* no need to edit ****************************
 #fortranFitAtomTypeNum=0                        #fortran fitting时原子所属种类数目(linear和grr公用参数)  default:0(废弃，不需要)
-fortranFitFeatNum0=None                         #fortran fitting时输入的feat的数目(linear和grr公用参数)  default:None
-fortranFitFeatNum2=None                         #fortran fitting时PCA之后使用的feat的数目(linear和grr公用参数)  此值目前已经不需要设置
+# fortranFitFeatNum0=None                         #fortran fitting时输入的feat的数目(linear和grr公用参数)  default:None
+# fortranFitFeatNum2=None                         #fortran fitting时PCA之后使用的feat的数目(linear和grr公用参数)  此值目前已经不需要设置
 isDynamicFortranFitRidgePenaltyTerm=False       #fortran fitting时最后岭回归时所加的对角penalty项的大小是否根据PCA最小的奇异值调整 default:False
 fortranGrrRefNum=[800,1000]                           #fortran grr fitting时每种原子所采用的ref points数目,若设置应为类数组   default:None
 fortranGrrRefNumRate=0.1                        #fortran grr fitting时每种原子选择ref points数目所占总case数目的比率   default:0.1
@@ -183,9 +183,6 @@ fortranGrrKernelAlpha=1                         #fortran grr fitting时kernel所
 fortranGrrKernalDist0=3.0                       #fortran grr fitting时kernel所用超参数dist0
 realFeatNum=111
 
-mulFactorVectOf2bFeat=None
-mulFactorVectOf3bFeat1=None
-mulFactorVectOf3bFeat2=None
 #-----------------------------------------------
 
 

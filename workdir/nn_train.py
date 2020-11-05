@@ -228,10 +228,14 @@ class Trainer(NNapiBase):
         # feat_scaled = self.ds.pre_feat(feat, itypes)
         # engy_scaled = self.ds.pre_engy(engy, itypes)
 
-        dfeat_names = pd.read_csv(f_train_dfeat, header=None).values[:,0] #TODO:
-        image_nums = pd.read_csv(f_train_dfeat, header=None).values[:,1].astype(int)
-        pos_nums = pd.read_csv(f_train_dfeat, header=None).values[:,2].astype(int)
-        nImg = image_nums.shape[0]
+        dfeat_names = {}
+        image_nums = {}
+        pos_nums = {}
+        for m in pm.use_Ftype:
+            dfeat_names[m] = pd.read_csv(f_train_dfeat+str(m), header=None).values[:,0] #TODO:
+            image_nums[m] = pd.read_csv(f_train_dfeat+str(m), header=None).values[:,1].astype(int)
+            pos_nums[m] = pd.read_csv(f_train_dfeat+str(m), header=None).values[:,2].astype(int)
+            nImg = image_nums[m].shape[0]
       
         # fors, nblist = r_fors_nblist_csv(f_train_nblt) #TODO:
         # fors_scaled = self.ds.pre_fors(fors, itypes)
@@ -291,39 +295,46 @@ class Trainer(NNapiBase):
                     # engy_scaled_bat.append(engy_scaled[indImg[rndind[nextImg+i]]:indImg[rndind[nextImg+i]+1]])
                     # # fors_scaled_bat.append(fors_scaled[indImg[rndind[nextImg+i]]:indImg[rndind[nextImg+i]+1]])
                     # itypes_bat.append(itypes[indImg[rndind[nextImg+i]]:indImg[rndind[nextImg+i]+1]])
-                    
-                    dfeat_name = dfeat_names[rndind[nextImg+i]]
-                    image_num = image_nums[rndind[nextImg+i]]
-                    pos_num = pos_nums[rndind[nextImg+i]]
-                    read_dfeatnn.read_dfeat(dfeat_name,image_num,pos_num)
-                    fors = np.array(read_dfeatnn.force).transpose().astype(pm.tf_dtype)
-                    nblist = np.array(read_dfeatnn.list_neigh).transpose().astype(int)
+                    kk=0
+                    dfeat_name={}
+                    image_num={}
+                    pos_num={}
+                    for mm in pm.use_Ftype:
+                        dfeat_name[mm] = dfeat_names[mm][rndind[nextImg+i]]
+                        image_num[mm] = image_nums[mm][rndind[nextImg+i]]
+                        pos_num[mm] = pos_nums[mm][rndind[nextImg+i]]
+                        itype_atom=np.asfortranarray(np.array(pm.atomType).transpose())
+                        wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+                        rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
+                        read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom,rad_atom,wp_atom)
 
-                    feature=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
-                    engy=np.array(read_dfeatnn.energy).reshape((-1,1)).astype(pm.tf_dtype)
-                    itypes=np.array(read_dfeatnn.iatom).transpose().astype(int)
-                    # print(feat.shape)
-                    # print(engy.shape)
-                    # print(itypes.shape)
-                    feat_scaled_bat.append(self.ds.pre_feat(feature,itypes))
+                        feat_tmp=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
+
+                        dfeat_tmp=np.array(read_dfeatnn.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)
+                        if kk==0:
+                            feat=feat_tmp
+                            dfeat=dfeat_tmp
+                            fors = np.array(read_dfeatnn.force).transpose().astype(pm.tf_dtype)
+                            nblist = np.array(read_dfeatnn.list_neigh).transpose().astype(int)
+                            engy=np.array(read_dfeatnn.energy).reshape((-1,1)).astype(pm.tf_dtype)
+                            itypes=np.array(read_dfeatnn.iatom).transpose().astype(int)
+                        else:
+                            feat=np.concatenate((feat,feat_tmp),axis=1)
+                            dfeat=np.concatenate((dfeat,dfeat_tmp),axis=2)
+                        read_dfeatnn.deallo()
+                        kk=kk+1
+                    feat_scaled_bat.append(self.ds.pre_feat(feat,itypes))
                     engy_scaled_bat.append(self.ds.pre_engy(engy, itypes))
                     itypes_bat.append(itypes)
-
                     fors_scaled = self.ds.pre_fors(fors, itypes)
-                    # fors_scaled = self.ds.pre_fors(fors, itypes[indImg[rndind[nextImg+i]]:indImg[rndind[nextImg+i]+1]])
                     nblist_bat.append(nblist)
                     fors_scaled_bat.append(fors_scaled)
-                    #print(batch[i].shape)
-                    #print(itypes_bat[-1].shape)
-                    #print(nblist_bat[-1].shape)
-                    #TODO: a loop, call fortran
-                    dfeat=np.array(read_dfeatnn.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)
                     batch.append(self.ds.pre_dfeat(dfeat, itypes_bat[-1], nblist_bat[-1]))
 
                     nblist_bat[-1][nblist_bat[-1]>0] += nblt_shift
                     #nblist_bat[i] += nblt_shift
                     nblt_shift += natoms[rndind[nextImg+i], 0]
-                    read_dfeatnn.deallo()
+                    
 
                 # read_dfeatnn.deallo()
 
@@ -434,10 +445,15 @@ class Trainer(NNapiBase):
         # engy_scaled = self.ds.pre_engy(engy, itypes)
         # fors, nblist = r_fors_nblist_csv(f_test_nblt)
         # fors_scaled = self.ds.pre_fors(fors, itypes)
-        dfeat_names = pd.read_csv(f_test_dfeat, header=None).values[:,0]
-        image_nums = pd.read_csv(f_test_dfeat, header=None).values[:,1].astype(int)
-        pos_nums = pd.read_csv(f_test_dfeat, header=None).values[:,2].astype(int)
-        nImg = image_nums.shape[0]
+        dfeat_names = {}
+        image_nums = {}
+        pos_nums = {}
+        for m in pm.use_Ftype:
+            dfeat_names[m] = pd.read_csv(f_test_dfeat+str(m), header=None).values[:,0]
+            image_nums[m] = pd.read_csv(f_test_dfeat+str(m), header=None).values[:,1].astype(int)
+            pos_nums[m] = pd.read_csv(f_test_dfeat+str(m), header=None).values[:,2].astype(int)
+            nImg = image_nums[m].shape[0]
+        
 
         nbatches = int(math.ceil(nImg/batch_size))
         batch_size_last = int(nImg - batch_size * (nbatches - 1))
@@ -472,20 +488,36 @@ class Trainer(NNapiBase):
                 real_batch_size = batch_size
 
             nblt_shift = 0
-            for i in range(real_batch_size): #TODO:
+            for i in range(real_batch_size): 
+                kk=0
+                dfeat_name={}
+                image_num={}
+                pos_num={}
+                for mm in pm.use_Ftype:
+                    dfeat_name[mm] = dfeat_names[mm][nextImg+i]
+                    image_num[mm] = image_nums[mm][nextImg+i]
+                    pos_num[mm] = pos_nums[mm][nextImg+i]
+                    itype_atom=np.asfortranarray(np.array(pm.atomType).transpose())
+                    wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+                    rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
+                    read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom,rad_atom,wp_atom)
 
-                dfeat_name = dfeat_names[nextImg+i]
-                image_num = image_nums[nextImg+i]
-                pos_num = pos_nums[nextImg+i]
-                read_dfeatnn.read_dfeat(dfeat_name,image_num,pos_num)
-                fors = np.array(read_dfeatnn.force).transpose().astype(pm.tf_dtype)
-                nblist = np.array(read_dfeatnn.list_neigh).transpose().astype(int)
-
-                feature=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
-                # print(feature[0,:])
-                engy=np.array(read_dfeatnn.energy).reshape((-1,1)).astype(pm.tf_dtype)
-                itypes=np.array(read_dfeatnn.iatom).transpose().astype(int)
-                feat_scaled_bat.append(self.ds.pre_feat(feature,itypes))
+                    feat_tmp=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
+                    dfeat_tmp=np.array(read_dfeatnn.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)
+                    if kk==0:
+                        feat=feat_tmp
+                        dfeat=dfeat_tmp
+                        fors = np.array(read_dfeatnn.force).transpose().astype(pm.tf_dtype)
+                        nblist = np.array(read_dfeatnn.list_neigh).transpose().astype(int)
+                        engy=np.array(read_dfeatnn.energy).reshape((-1,1)).astype(pm.tf_dtype)
+                        itypes=np.array(read_dfeatnn.iatom).transpose().astype(int)
+                    else:
+                        feat=np.concatenate((feat,feat_tmp),axis=1)
+                        dfeat=np.concatenate((dfeat,dfeat_tmp),axis=2)
+                    read_dfeatnn.deallo()
+                    kk=kk+1
+ 
+                feat_scaled_bat.append(self.ds.pre_feat(feat,itypes))
                 engy_scaled_bat.append(self.ds.pre_engy(engy, itypes))
                 engy_bat.append(engy)
                 itypes_bat.append(itypes)
@@ -495,17 +527,12 @@ class Trainer(NNapiBase):
                 nblist_bat.append(nblist)
                 fors_scaled_bat.append(fors_scaled)
                 fors_bat.append(fors)
-                #print(batch[i].shape)
-                #print(itypes_bat[-1].shape)
-                #print(nblist_bat[-1].shape)
-                #TODO: a loop, call fortran
-                dfeat=np.array(read_dfeatnn.dfeat,dtype=pm.tf_dtype).transpose(1,2,0,3).astype(pm.tf_dtype)
                 batch.append(self.ds.pre_dfeat(dfeat, itypes_bat[-1], nblist_bat[-1]))
 
                 
                 nblist_bat[-1][nblist_bat[-1]>0] += nblt_shift
                 nblt_shift += natoms[nextImg+i, 0]
-                read_dfeatnn.deallo()
+                # read_dfeatnn.deallo()
 
             dfeat_scaled = np.concatenate(batch, axis = 0)
             feat_scaled_bat = np.concatenate(feat_scaled_bat, axis = 0)
@@ -556,160 +583,3 @@ class Trainer(NNapiBase):
         # natomstot=itypes_bat.shape[0]
 
         return EiAE/natomstot, math.sqrt(EiSE/natomstot), FiAE/natomstot, math.sqrt(FiSE/natomstot/3)
-
-    #=======================================================================
-
-    # def linear_solv(self, f_test_feat, f_test_dfeat, f_test_nblt, f_test_natoms, dfeat_dir):
-
-    #     natoms = np.loadtxt(f_test_natoms, dtype=np.int);
-    #     nImg = natoms.shape[0]
-    #     indImg = np.zeros((nImg+1,), dtype=np.int)
-    #     indImg[0] = 0
-    #     for i in range(nImg):
-    #         indImg[i+1] = indImg[i] + natoms[i,0]
-    #     nextImg = 0
-
-    #     itypes,feat,engy = r_feat_csv(f_test_feat)
-    #     feat_scaled = self.ds.pre_feat(feat, itypes)
-    #     fors, nblist = r_fors_nblist_csv(f_test_nblt)
-    #     dfeat_names = pd.read_csv(f_test_dfeat, header=None).values[:,0]
-
-    #     mE = []
-    #     for i in range(pm.ntypes):
-    #         mE.append(engy[itypes == pm.at_types[i]].mean())
-    #         engy[itypes == pm.at_types[i]] -= mE[i]
-
-    #     mE = np.array(mE)
-    #     np.save(pm.dir_work+"E", mE)
-
-    #     nfeats = pm.nFeats[0]
-        
-    #     A = np.zeros((pm.ntypes*nfeats, pm.ntypes*nfeats))
-    #     B = np.zeros((pm.ntypes*nfeats, 1))
-
-    #     for ibat in range(nImg):
-    #         print(ibat)
-            
-    #         feat_scaled_bat = feat_scaled[indImg[nextImg]:indImg[nextImg+1]]
-    #         nblist_bat = nblist[indImg[nextImg]:indImg[nextImg+1]]
-    #         engy_bat = engy[indImg[nextImg]:indImg[nextImg+1]]
-    #         fors_bat = fors[indImg[nextImg]:indImg[nextImg+1]]
-    #         itypes_bat = itypes[indImg[nextImg]:indImg[nextImg+1]]
-                    
-    #         dfeat_name = dfeat_names[nextImg]
-    #         batch = self.ds.pre_dfeat(np.load(dfeat_dir + dfeat_name.rstrip()), itypes_bat, nblist_bat)
-
-    #         nextImg += 1
-            
-    #         for itype in range(pm.ntypes):
-    #             idx = (itypes_bat == pm.at_types[itype])
-    #             AE = (feat_scaled_bat[idx][:,np.newaxis,:] * feat_scaled_bat[idx][:,:,np.newaxis]).sum(axis=0)
-    #             BE = (engy_bat[idx][:,np.newaxis,:] * feat_scaled_bat[idx][:,:,np.newaxis]).sum(axis=0)
-    #             A[itype*nfeats:itype*nfeats+nfeats,itype*nfeats:itype*nfeats+nfeats] \
-    #                 += self.rtLossE * AE
-    #             B[itype*nfeats:itype*nfeats+nfeats] \
-    #                 += self.rtLossE * BE
-
-    #         for itype1 in range(pm.ntypes): #row blocks (the multiplier)
-    #             multiplier = np.zeros_like(batch)
-    #             idx1 = np.where((nblist_bat>0) & (itypes_bat[nblist_bat-1] == pm.at_types[itype1]))
-    #             multiplier[idx1] = batch[idx1]
-    #             multiplier = multiplier.sum(axis=1)
-    #             BF = np.expand_dims((fors_bat[:,np.newaxis,:] * multiplier[:,:,:]).sum(axis=(0,-1)), -1)
-    #             B[itype1*nfeats:itype1*nfeats+nfeats] \
-    #                 += self.rtLossF * BF
-    #             for itype2 in range(pm.ntypes): #colunm blocks
-    #                 AF = np.zeros_like(batch)
-    #                 idx2 = np.where((nblist_bat>0) & (itypes_bat[nblist_bat-1] == pm.at_types[itype2]))
-    #                 AF[idx2] = batch[idx2]
-    #                 AF = AF.sum(axis=1)
-    #                 AF = (AF[:,np.newaxis,:,:] * multiplier[:,:,np.newaxis,:]).sum(axis=(0,-1))
-    #                 A[itype1*nfeats:itype1*nfeats+nfeats,itype2*nfeats:itype2*nfeats+nfeats] \
-    #                     += self.rtLossF * AF
-
-    #     np.save(pm.dir_work+"A", A)
-    #     np.save(pm.dir_work+"B", B)
-
-    # #=======================================================================
-
-    # def linear_forward(self, f_test_feat, f_test_dfeat, f_test_nblt, f_test_natoms, dfeat_dir, outfile):
-
-    #     natoms = np.loadtxt(f_test_natoms, dtype=np.int);
-    #     nImg = natoms.shape[0]
-    #     indImg = np.zeros((nImg+1,), dtype=np.int)
-    #     indImg[0] = 0
-    #     for i in range(nImg):
-    #         indImg[i+1] = indImg[i] + natoms[i,0]
-    #     nextImg = 0
-
-    #     itypes,feat,engy = r_feat_csv(f_test_feat)
-    #     feat_scaled = self.ds.pre_feat(feat, itypes)
-    #     fors, nblist = r_fors_nblist_csv(f_test_nblt)
-    #     dfeat_names = pd.read_csv(f_test_dfeat, header=None).values[:,0]
-
-    #     mE = np.load(pm.dir_work+"E.npy")
-
-    #     nfeats = pm.nFeats[0]
-
-    #     FiAE=0.
-    #     EiAE=0.
-    #     FiSE = 0.
-    #     EiSE = 0.        
-
-    #     W=[]
-    #     X = np.load(pm.dir_work+"X.npy")
-    #     for i in range(pm.ntypes):
-    #         W.append(X[i*nfeats:i*nfeats+nfeats])
-
-    #     for ibat in range(nImg):
-    #         print(ibat)
-            
-    #         feat_scaled_bat = feat_scaled[indImg[nextImg]:indImg[nextImg+1]]
-    #         nblist_bat = nblist[indImg[nextImg]:indImg[nextImg+1]]
-    #         engy_bat = engy[indImg[nextImg]:indImg[nextImg+1]]
-    #         fors_bat = fors[indImg[nextImg]:indImg[nextImg+1]]
-    #         itypes_bat = itypes[indImg[nextImg]:indImg[nextImg+1]]
-                    
-    #         dfeat_name = dfeat_names[nextImg]
-    #         batch = self.ds.pre_dfeat(np.load(dfeat_dir + dfeat_name.rstrip()), itypes_bat, nblist_bat)
-
-    #         nextImg += 1
-
-    #         engy_out = np.zeros_like(engy_bat)
-            
-    #         for itype in range(pm.ntypes):
-    #             idx = (itypes_bat == pm.at_types[itype])
-    #             engy_out[idx] = np.matmul(feat_scaled_bat[idx],W[itype])+mE[itype]
-
-    #         cp_dEldXi = np.zeros_like(feat_scaled_bat)
-    #         for i in range(self.ntypes):
-    #             idx = (itypes_bat == pm.at_types[i])
-    #             cp_dEldXi[idx] = W[i][:,0]
-
-    #         dEnldXin = np.zeros((fors_bat.shape[0], self.maxNb+1, nfeats))
-    #         dEnldXin[nblist_bat>0] = cp_dEldXi[nblist_bat[nblist_bat>0].astype(int)-1]
-
-    #         f_out = np.sum(np.expand_dims(dEnldXin,3)*batch,axis=(1,2))
-
-    #         out_Fp = np.concatenate([np.expand_dims(itypes_bat,-1), engy_bat, engy_out, engy_bat-engy_out, fors_bat, f_out, fors_bat-f_out], axis=1)
-    #         df_out = pd.DataFrame(out_Fp)
-    #         if ibat==0:
-    #             df_out.to_csv(outfile, mode='w', header=False, index=False)
-    #         else:
-    #             df_out.to_csv(outfile, mode='a', header=False, index=False)
-
-    #         FiAE0 = np.sum(np.sqrt(np.sum((f_out-fors_bat)**2, axis = 1)))
-    #         FiAE += FiAE0
-    #         EiAE0 = np.sum(np.abs(engy_out-engy_bat))
-    #         EiAE += EiAE0
-            
-    #         FiSE0 = np.sum((f_out-fors_bat)**2)
-    #         FiSE += FiSE0
-    #         EiSE0 = np.sum((engy_out-engy_bat)**2)
-    #         EiSE += EiSE0
-
-    #     natomstot=itypes.shape[0]
-
-    #     print(EiAE/natomstot, math.sqrt(EiSE/natomstot), FiAE/natomstot, math.sqrt(FiSE/natomstot/3))
-
-    #=======================================================================

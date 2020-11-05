@@ -15,7 +15,8 @@ PROGRAM gen_3b_feature
     character(len=50) char_tmp(20)
     character(len=80) trainSetFileDir(200)
     character(len=80) trainSetDir
-    character(len=90) MOVEMENTDir,dfeatDir,infoDir,trainDataDir
+    character(len=90) MOVEMENTDir,dfeatDir,infoDir,trainDataDir,inquirepos2
+    integer(8) inp
     integer sys_num,sys,recalc_grid
 
     integer,allocatable,dimension (:,:,:) :: list_neigh,iat_neigh,iat_neigh_M
@@ -112,6 +113,7 @@ PROGRAM gen_3b_feature
     enddo
     close(13)
     trainDataDir=trim(trainSetDir)//"/trainData.txt.Ftype2"
+    inquirepos2=trim(trainSetDir)//"/inquirepos2.txt"
 !cccccccccccccccccccccccccccccccccccccccc
 
     do i=1,ntype
@@ -370,7 +372,7 @@ PROGRAM gen_3b_feature
 
       num_tot=0
 
-      open(25,file=dfeatDir,form="unformatted")
+      open(25,file=dfeatDir,form="unformatted",access='stream')
       rewind(25)
       write(25) num_step1,natom,nfeat0m,m_neigh
       write(25) ntype,(nfeat0(ii),ii=1,ntype)
@@ -564,6 +566,11 @@ PROGRAM gen_3b_feature
 !cccccccccccccccccccccccccccccccccccccccccccccccccccc
 
     num_tot=num_tot+natom
+
+    open(44,file=inquirepos2,position="append")
+    Inquire(25,pos=inp)
+    write(44,"(A,',',I5,',',I20)") dfeatDir, num_step, inp
+    close(44)
 
     write(25) Eatom
     write(25) fatom
