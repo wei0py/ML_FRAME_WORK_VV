@@ -456,7 +456,7 @@ class MdImage(Atoms,Image,NNapiBase):
             del self.neighborDistanceVectArrayOfAllAtoms
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
-        feat,_,_=self.calc_feat()
+        feat,_,nblist=self.calc_feat()
         # print(cell)
         # print(pos)
         # print(np.shape(feat))

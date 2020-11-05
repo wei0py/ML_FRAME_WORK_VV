@@ -106,6 +106,7 @@ if pm.isRunMd:
     mdRunner.final()
 
 if pm.isRunMd_nn:
+    os.environ["CUDA_VISIBLE_DEVICES"] = pm.cuda_dev
     # import preparatory_work as ppw
     from nn_md_runner import MdRunner
     # if not pm.isCalcFeat:
