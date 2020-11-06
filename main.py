@@ -44,14 +44,14 @@ if pm.isCalcFeat:
         os.system(command)
     # command=pm.genFeatDir+"/"+gen_3b_feature+".x > ./output/out2"
     # os.system(command)
-    pp.movementUsed()
+    # pp.movementUsed()
     # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
     # pp.writeFitInput()
 else:
     os.system('cp '+os.path.abspath(pm.fbinListPath)+' ./input/')
     pp.writeGenFeatInput()
     pp.collectAllSourceFiles()
-    pp.movementUsed()
+    # pp.movementUsed()
     # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
     # pp.writeFitInput()
 

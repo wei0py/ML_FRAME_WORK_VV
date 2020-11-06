@@ -54,7 +54,8 @@ def movementUsed():
     '''
     badImageNum=0
     for names in pm.sourceFileList:
-        image=np.loadtxt(os.path.join(os.path.abspath(names),'info.txt'))
+        # image=np.loadtxt(os.path.join(os.path.abspath(names),'info.txt'))
+        image=pd.read_csv(os.path.join(os.path.abspath(names),'info.txt.Ftype'+str(pm.use_Ftype[0])), header=None,delim_whitespace=True).values[:,0].astype(int)
         badimage=image[3:]
         badImageNum=badImageNum+len(badimage)
     
