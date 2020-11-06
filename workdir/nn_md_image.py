@@ -454,8 +454,8 @@ class MdImage(Atoms,Image,NNapiBase):
         '''
         if hasattr(self,'neighborDistanceVectArrayOfAllAtoms'):
             del self.neighborDistanceVectArrayOfAllAtoms
-        cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
-        pos=np.asfortranarray(self.get_scaled_positions(True).T)
+        # cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
+        # pos=np.asfortranarray(self.get_scaled_positions(True).T)
         feat,_,nblist=self.calc_feat()
         # print(cell)
         # print(pos)
@@ -527,13 +527,21 @@ class MdImage(Atoms,Image,NNapiBase):
             x = np.eye(3)
             x[i, i] += d
             atoms.set_cell(np.dot(cell, x), scale_atoms=True)
+            print(self.cell)
+            print(self.cupyCell)
         
             eplus = atoms.calc_only_energy()
+            print(self.cell)
+            print(self.cupyCell)
 
             x[i, i] -= 2 * d
             atoms.set_cell(np.dot(cell, x), scale_atoms=True)
+            print(self.cell)
+            print(self.cupyCell)
             # self.isNewStep=True
             eminus = atoms.calc_only_energy()
+            print(self.cell)
+            print(self.cupyCell)
 
             stress[i, i] = (eplus - eminus) / (2 * d * V)
             x[i, i] += d
@@ -542,14 +550,22 @@ class MdImage(Atoms,Image,NNapiBase):
             x[i, j] = d
             x[j, i] = d
             atoms.set_cell(np.dot(cell, x), scale_atoms=True)
+            print(self.cell)
+            print(self.cupyCell)
             # self.isNewStep=True
             eplus = atoms.calc_only_energy()
+            print(self.cell)
+            print(self.cupyCell)
 
             x[i, j] = -d
             x[j, i] = -d
             atoms.set_cell(np.dot(cell, x), scale_atoms=True)
+            print(self.cell)
+            print(self.cupyCell)
             # self.isNewStep=True
             eminus = atoms.calc_only_energy()
+            print(self.cell)
+            print(self.cupyCell)
 
             stress[i, j] = (eplus - eminus) / (4 * d * V)
             stress[j, i] = stress[i, j]
