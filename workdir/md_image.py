@@ -17,7 +17,7 @@ from ase.constraints import (voigt_6_to_full_3x3_stress,
 from calc_ftype1 import calc_ftype1
 from calc_ftype2 import calc_ftype2
 from calc_lin import calc_lin
-from calc_clst import calc_clst
+from calc_vv import calc_vv
 
 # from minilib.get_util_info import getGpuInfo
 

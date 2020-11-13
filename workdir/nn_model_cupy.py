@@ -40,8 +40,17 @@ class EiNN_cupy:
         self.natoms = 0
         self.ntypes = self.at_types.shape[0]
 
-        self.act = self.elup1
-        self.int_act = self.int_elup1
+        if pm.activation_func=='elup1':
+            self.act = self.elup1
+            self.int_act = self.int_elup1
+        # if pm.activation_func=='sigmoid':
+        #     self.act = self.d_sigmoid
+        #     self.int_act = self.sigmoid
+        if pm.activation_func=='softplus':
+            self.act = self.sigmoid
+            self.int_act = self.softplus
+        # self.act = self.elup1
+        # self.int_act = self.int_elup1
 
         self.nnWij = self.loadWij_np(f_Wij_np, b_print=True)
 

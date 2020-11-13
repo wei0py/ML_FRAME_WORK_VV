@@ -14,7 +14,7 @@ from ase.md.nptberendsen import NPTBerendsen as NPT
 from ase import units
 
 from calc_lin import calc_lin
-from calc_clst import calc_clst
+from calc_vv import calc_vv
 
 # from minilib.get_util_info import getGpuInfo
 
@@ -48,8 +48,8 @@ class MdRunner():
             calc=calc_lin
             # ppw.loadFeatCalcInfo(pm.linModelCalcInfoPath)
             # shutil.copy(pm.linFitInputBakPath,pm.fitInputPath)
-        elif calcModel=='clst':
-            calc=calc_clst
+        elif calcModel=='vv':
+            calc=calc_vv
             # ppw.loadFeatCalcInfo(pm.grrModelCalcInfoPath)
             # shutil.copy(pm.grrFitInputBakPath,pm.fitInputPath)
         else:

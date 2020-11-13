@@ -392,6 +392,11 @@ class MdImage(Atoms,Image,NNapiBase):
             Fp[i,1]=Fp[i,1]+dFy
             Fp[i,2]=Fp[i,2]+dFz
 
+        if pm.add_force:
+            add_force=np.loadtxt('add_force')
+            for i in range(1,len(add_force)):                
+                Fp[add_force[i,0]-1,0]=Fp[add_force[i,0]-1,0]+(add_force[i,1]-1)*add_force[i,2]
+
         self.forces = - cp.asnumpy(Fp)
 
         #print("cal feat time: ",time.time()-start)
@@ -502,6 +507,11 @@ class MdImage(Atoms,Image,NNapiBase):
                         dE=dE+0.5*4*w22*(rad/dd)**12*math.cos(yy)**2
             Ep[i]=Ep[i]+dE
 
+        # if pm.add_force:
+        #     add_force=np.loadtxt('add_force')
+        #     for i in range(1,len(add_force)):                
+        #         Fp[add_force[i,0]-1,0]=Fp[add_force[i,0]-1,0]+(add_force[i,1]-1)*add_force[i,2]
+                
         #print("cal feat time: ",time.time()-start)
         if self.isProfile:
             self.calcFeatTime+=time.time()-start

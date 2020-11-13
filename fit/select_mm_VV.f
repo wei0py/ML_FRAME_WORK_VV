@@ -230,7 +230,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        allocate(dE_term0(nstore))
        allocate(idd(0:4,nstore)) ! the type and index
 
-
+       idd=0
 !       do 3000 iloop1=0,6
 !       do 3000 iloop2=0,6
 
@@ -509,7 +509,7 @@ ccccccccccccccccccccccccccccccccc
 
        
         if(iscan_mm.eq.0)  then
-        open(12,file="OUT.VV_index")
+        open(12,file="OUT.VV_index."//char(48+itype))
         rewind(12)
         write(12,*) mm
         do iii=1,mm
@@ -518,7 +518,7 @@ ccccccccccccccccccccccccccccccccc
         enddo
         close(12)
 
-       open(10,file="E_fit.linear."//char(48+itype))
+       open(10,file="E_fit.VV."//char(48+itype))
        rewind(10) 
        do i=1,num_case
        write(10,"(2(E14.7,1x))") Ei_case(i),E_fit(i)
@@ -603,7 +603,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccc
        write(6,"('TEST diff1,2,4=',3(E14.7,1x))") diff1,diff2,diff4
 
        if(iscan_mm.eq.0) then
-       open(14,file="E_fit.test."//char(48+itype))
+       open(14,file="E_fit.VV.test."//char(48+itype))
        rewind(14)
        do i=1,ntest
        write(14,"(2(E14.7,1x))") Ei_test(i),E_fit(i)

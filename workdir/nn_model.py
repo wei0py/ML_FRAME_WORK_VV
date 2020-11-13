@@ -35,12 +35,16 @@ class EiNN:
         self.nlayers = nlayers
         self.nnodes = nnodes
 
-        #self.act = self.dlin
-        #self.int_act = self.lin
-        self.act = self.elup1
-        self.int_act = self.int_elup1
-        #self.act = self.d_sigmoid
-        #self.int_act = self.sigmoid
+        if pm.activation_func=='elup1':
+            self.act = self.elup1
+            self.int_act = self.int_elup1
+        # if pm.activation_func=='sigmoid':
+        #     self.act = self.d_sigmoid
+        #     self.int_act = self.sigmoid
+        if pm.activation_func=='softplus':
+            self.act = self.d_softplus
+            self.int_act = self.softplus
+
 
 
         self.at_types = pm.atomType
@@ -87,6 +91,12 @@ class EiNN:
 
     def d_sigmoid(self, tensor_in):
         return(tf.nn.sigmoid(tensor_in)*(1-tf.nn.sigmoid(tensor_in)))
+
+    def softplus(self,tensor_in):
+        return(tf.nn.softplus(tensor_in))
+    
+    def d_softplus(self,tensor_in):
+        return(tf.nn.sigmoid(tensor_in))
 
     def lin(self, tensor_in): # activation function, linear
         return(tensor_in)

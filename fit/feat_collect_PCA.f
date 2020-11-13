@@ -107,7 +107,7 @@
        do kkk=1,nfeat_type
        num=num+nfeat(ii,kkk)
        enddo
-       nfeat_iatype(ii)=num
+       nfeat_iatype(ii)=num   ! this include all feature types
        if(num.gt.nfeatM) nfeatM=num
        enddo
 
@@ -273,6 +273,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccc
        write(10) num_case(itype),nfeat2
        do ii=1,num_case(itype)
        write(10) ii,Ei_case(ii,itype),feat2_case(:,ii)
+! This feat2_case has combined all the feature types:nfeat2
        enddo
        close(10)
 

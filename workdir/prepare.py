@@ -103,7 +103,7 @@ def writeGenFeatInput(UseFtype=pm.use_Ftype):
                     GenFeatInput.write(str(pm.Ftype1_para['numOf2bfeat'][i])+'              ! n2b \n')
                 # GenFeatInput.write(str(pm.maxNeighborNum)+'      ! m_neigh \n')
                 GenFeatInput.write(str(pm.E_tolerance)+'    ! E_tolerance  \n')
-                GenFeatInput.write(str(pm.iflag_ftype)+'    ! iflag_ftype \n')
+                GenFeatInput.write(str(pm.Ftype1_para['iflag_ftype'])+'    ! iflag_ftype \n')
                 GenFeatInput.write(str(pm.recalc_grid)+'    ! recalc_grid, 0 read from file, 1 recalc \n')
         if ftype == 2:
             '''
@@ -131,7 +131,7 @@ def writeGenFeatInput(UseFtype=pm.use_Ftype):
                     GenFeatInput.write(str(pm.Ftype2_para['numOf3bfeat1'][i])+','+str(pm.Ftype2_para['numOf3bfeat2'][i])+'       ! n3b1, n3b2 \n')
                 # GenFeatInput.write(str(pm.maxNeighborNum)+'      ! m_neigh \n')
                 GenFeatInput.write(str(pm.E_tolerance)+'    ! E_tolerance  \n')
-                GenFeatInput.write(str(pm.iflag_ftype)+'    ! iflag_ftype \n')
+                GenFeatInput.write(str(pm.Ftype2_para['iflag_ftype'])+'    ! iflag_ftype \n')
                 GenFeatInput.write(str(pm.recalc_grid)+'    ! recalc_grid, 0 read from file, 1 recalc \n')
 
 

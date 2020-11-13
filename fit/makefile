@@ -1,6 +1,6 @@
-ALLEXE = calc_lin_forceMM.r  feat_collect_PCA.r  fit_lin_forceMM.r
-NORANEXE =  calc_lin_forceMM.r  feat_collect_PCA.r  fit_lin_forceMM.r
-RANEXE = feat_collect_PCA.r
+ALLEXE = calc_lin_forceMM.r  feat_collect_PCA.r  fit_lin_forceMM.r select_mm_VV.r fit_VV_forceMM.r calc_VV_forceMM.r
+NORANEXE =  calc_lin_forceMM.r  feat_collect_PCA.r  fit_lin_forceMM.r fit_VV_forceMM.r calc_VV_forceMM.r
+RANEXE = feat_collect_PCA.r select_mm_VV.r
 NORANOBJ = $(NORANEXE:.r=.o)
 RANOBJ = $(RANEXE:.r=.o)
 .PHONY: all lin 

@@ -10,24 +10,23 @@ isRunMd_nn=False
 isFollowMd=False                                #是否是接续上次的md继续运行  default:False
 
 #************** Dir **********************
-codedir='/home/buyu/MLFF/ML_FRAME_WORK/workdir'
-trainSetDir='/home/buyu/MLFF/AlHcomb/'
-fortranFitSourceDir='/home/buyu/MLFF/ML_FRAME_WORK/fit'
+codedir='/ssd/linwang/ALL_ML_CODE/ML_FRAME_WORK/workdir'
+trainSetDir='.'
+fortranFitSourceDir='/ssd/linwang/ALL_ML_CODE/ML_FRAME_WORK/fit'
 #fitModelDir='/ssd/buyu/fit/fread_dfeat'
-fitModelDir='/home/buyu/MLFF/ML_FRAME_WORK/fit/fread_dfeat_new'
-genFeatDir='/home/buyu/MLFF/ML_FRAME_WORK/gen_feature/'
-mdImageFileDir='/home/buyu/MLFF/MD/MDAlHsml3'                              #设置md的初始image的文件所在的文件夹  default:'.'
+fitModelDir='./fread_dfeat'
+genFeatDir='/ssd/linwang/ALL_ML_CODE/ML_FRAME_WORK/gen_feature'
+mdImageFileDir='./md'                              #设置md的初始image的文件所在的文件夹  default:'.'
 PWmatDir='/home/buyu/PWmat/MDAlHsml3_loop'
-isCalcFeat=True
+#isCalcFeat=True
 #isFitLinModel=True
-#isClassify=True
 #isRunMd=True
 #isRunMd_nn=True
 isFollowMd=False                                #是否是接续上次的md继续运行  default:False
-
+add_force=False           # for NN md
 #********* for gen_feature.in *********************
-atomType=[1,13]  
-maxNeighborNum=100
+atomType=[6,29]  
+maxNeighborNum=150
 
 iflag_PCA=0
 Rc_M=5.5                     # max of Rcut
@@ -37,12 +36,13 @@ Ftype_name={1:'gen_2b_feature',2:'gen_3b_feature'}
 use_Ftype=[1,2]
 nfeat_type=len(use_Ftype)
 Ftype1_para={
-    'numOf2bfeat':[24,24],
+    'numOf2bfeat':[24,24],       # [itpye1,itype2]
     'Rc':[5.5,5.5],
     'Rm':[5.0,5.0],
     'iflag_grid':[3,3],                      # 1 or 2 or 3
     'fact_base':[0.2,0.2],
-    'dR1':[0.5,0.5]
+    'dR1':[0.5,0.5],
+    'iflag_ftype':3       # same value for different types, iflag_ftype:1,2,3 when 3, iflag_grid must be 3
 }
 Ftype2_para={
     'numOf3bfeat1':[3,3],
@@ -54,28 +54,11 @@ Ftype2_para={
     'fact_base':[0.2,0.2],
     'dR1':[0.5,0.5],
     'dR2':[0.5,0.5],
+    'iflag_ftype':3   # same value for different types, iflag_ftype:1,2,3 when 3, iflag_grid must be 3
 }
 
-# numOf2bfeat=[24,24]
-# numOf3bfeat1=[3,3]
-# numOf3bfeat2=[3,3]
-
-
-# Rc_2b=[5.5,5.5]
-# Rc_3b=[5.5,5.5]
-# Rc_3b_2=[5.5,5.5]
-
-# Rm_2b=[5.0,5.0]
-# Rm_3b=[5.0,5.0]
-# iflag_grid_2b=[3,3]                      # 1 or 2 or 3
-# fact_base_2b=[0.2,0.2]
-# iflag_grid_3b=[3,3]                      # 1 or 2 or 3
-# fact_base_3b=[0.2,0.2]
-# dR1_2b=[0.5,0.5]
-# dR1_3b=[0.5,0.5] 
-# dR2_3b=[0.5,0.5] 
 E_tolerance=0.3
-iflag_ftype=3                      # 2 or 3 or 4 when 4, iflag_grid must be 3
+# iflag_ftype=3        # Seems like, this should be in the Ftype1/2_para        # 2 or 3 or 4 when 4, iflag_grid must be 3
 recalc_grid=1                      # 0:read from file or 1: recalc 
 #----------------------------------------------------
 rMin=0.0
@@ -105,7 +88,7 @@ fortranFitRidgePenaltyTerm=0.0001               #fortran fitting时最后岭回�
 #*********************** for MD **********************
 
 #以下部分为md设置的参数 
-mdCalcModel='lin'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'clst'
+mdCalcModel='vv'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'vv'
 mdRunModel='nvt'                                #md运行时的模型,'nve' or 'nvt' or 'npt', default:'nve'
 mdStepNum=4000                                  #md运行的步数,default:1000
 mdStepTime=0.1                                  #md运行时一步的时长(fs), default:1.0
@@ -141,6 +124,7 @@ tf_dtype = 'float32' # dtype of tensorflow trainning, 'float32' faster than 'flo
 test_ratio = 0.05
 #================================================================================
 # NN model related
+activation_func='softplus'     # could choose 'softplus' and 'elup1' now
 ntypes=len(atomType)
 nLayers = 3
 nNodes = np.array([[60,60],[30,30],[1,1]])
