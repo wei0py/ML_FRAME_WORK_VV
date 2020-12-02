@@ -14,10 +14,11 @@ from ase.constraints import (voigt_6_to_full_3x3_stress,
                              full_3x3_to_voigt_6_stress)
 import math                        
 
-from calc_feature_nn import calc_feature
+# from calc_feature_nn import calc_feature
 from calc_ftype1 import calc_ftype1
 from calc_ftype2 import calc_ftype2
 from nn_model_cupy import NNapiBase #,EiNN_cupy
+from calc_rep import calc_rep
 # from minilib.get_util_info import getGpuInfo
 
 class MdImage(Atoms,Image,NNapiBase):
@@ -56,6 +57,8 @@ class MdImage(Atoms,Image,NNapiBase):
         NNapiBase.__init__(self,nn=nn,data_scaler=data_scaler)
         
         self.isCheckVar=isCheckVar
+        if pm.add_force:
+            self.add_force=np.loadtxt('add_force')
         for i in range(len(pm.use_Ftype)):
             if pm.use_Ftype[i]==1:
                 calc_ftype1.load_model()
@@ -98,6 +101,8 @@ class MdImage(Atoms,Image,NNapiBase):
         NNapiBase.__init__(self,nn=nn,data_scaler=data_scaler)
         
         self.isCheckVar=isCheckVar
+        if pm.add_force:
+            self.add_force=np.loadtxt('add_force')
         # calc_feature.set_paths(pm.fitModelDir)
         for i in range(len(pm.use_Ftype)):
             if pm.use_Ftype[i]==1:
@@ -164,6 +169,8 @@ class MdImage(Atoms,Image,NNapiBase):
         NNapiBase.__init__(self,nn=nn,data_scaler=data_scaler)
         
         self.isCheckVar=isCheckVar
+        if pm.add_force:
+            self.add_force=np.loadtxt('add_force')
         
         for i in range(len(pm.use_Ftype)):
             if pm.use_Ftype[i]==1:
@@ -295,15 +302,23 @@ class MdImage(Atoms,Image,NNapiBase):
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
         for i in range(len(pm.use_Ftype)):
             if pm.use_Ftype[i]==1:
+                # start=time.time()
                 calc_ftype1.gen_feature(cell,pos)
+                # print("only feat2b time: ",time.time()-start)
                 feat_tmp=np.array(calc_ftype1.feat).transpose()
                 dfeat_tmp=np.array(calc_ftype1.dfeat).transpose(1,2,0,3)
-                nblist = np.array(calc_ftype1.list_neigh_alltypem).transpose().astype(int)
+                list_neigh=calc_ftype1.list_neigh_alltypem
+                # nblist = np.array(calc_ftype1.list_neigh_alltypem).transpose().astype(int)
+                num_neigh = calc_ftype1.num_neigh_alltypem
             if pm.use_Ftype[i]==2:
+                # start=time.time()
                 calc_ftype2.gen_feature(cell,pos)
+                # print("only feat3b time: ",time.time()-start)
                 feat_tmp=np.array(calc_ftype2.feat).transpose()
                 dfeat_tmp=np.array(calc_ftype2.dfeat).transpose(1,2,0,3)
-                nblist = np.array(calc_ftype2.list_neigh_alltypem).transpose().astype(int)
+                list_neigh=calc_ftype2.list_neigh_alltypem
+                # nblist = np.array(calc_ftype2.list_neigh_alltypem).transpose().astype(int)
+                num_neigh = calc_ftype2.num_neigh_alltypem
             if i==0:
                 feat=feat_tmp
                 dfeat=dfeat_tmp
@@ -314,7 +329,7 @@ class MdImage(Atoms,Image,NNapiBase):
         # num_neigh_alltype=np.array(calc_feature.num_neigh_alltype)
         
        
-        return feat,dfeat,nblist
+        return feat,dfeat,list_neigh,num_neigh #nblist
 
     def calcEnergiesForces(self):
         
@@ -329,75 +344,105 @@ class MdImage(Atoms,Image,NNapiBase):
             del self.neighborDistanceVectArrayOfAllAtoms
 #TODO:
         
-        feat,dfeat,nblist=self.calc_feat()
+        feat,dfeat,list_neigh,num_neigh=self.calc_feat()
         # print(cell)
+        print("cal feat time: ",time.time()-start)
         # print(pos)
         # print(np.shape(dfeat))
+        # start2=time.time()
+        nblist = np.array(list_neigh).transpose().astype(int)
         itype=self.numbers
         feat_scaled = self.ds.pre_feat(feat, itype)
                 
         engy_out = self.nn.getEi(feat_scaled, itype)
         Ep = self.ds.post_engy(engy_out, itype)
-        self.energies=cp.asnumpy(Ep).reshape(-1)
-        self.etot=cp.sum(Ep)
+        
 
         dfeat_scaled = self.ds.pre_dfeat(dfeat, itype[:,np.newaxis], nblist)
         f_out    = self.nn.getFi(feat_scaled, dfeat_scaled, nblist, itype) #TODO:
         Fp = self.ds.post_fors(f_out, itype)
+
+        # print("GPU energy force time: ",time.time()-start2)
         # TODO:
-        cell=cp.asnumpy(self.cupyCell)
-        pos=self.get_scaled_positions(True)
-        rad_atom=np.array(pm.fortranFitAtomRadii)   
-        wp_atom=np.array(pm.fortranFitAtomRepulsingEnergies)
+        # start3=time.time()
+        cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
+        pos=np.asfortranarray(self.get_scaled_positions(True).T)
+        wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+        rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
         iatom_type=np.zeros_like(itype)
         for m in range(len(itype)):
-            for k in range(len(pm.atomType)):
-                if itype[m]==pm.atomType[k]:
-                    iatom_type[m]=k
+            iatom_type[m]=pm.atomType.index(itype[m])
+        iatom_type=np.asfortranarray(iatom_type.transpose())
 
-        for i in range(len(itype)):
-            rad1=rad_atom[iatom_type[i]]
-            dE=0.0
-            dFx=0.0
-            dFy=0.0
-            dFz=0.0
-            for j in nblist[i,:]:
-                if (j-1) != i and j > 0:
-                    rad2 = rad_atom[iatom_type[j-1]]
-                    rad=rad1+rad2
-                    dx1=(pos[j-1,0]-pos[i,0])%1.0
-                    if (abs(dx1-1) < abs(dx1)):
-                        dx1=dx1-1
-                    dx2=(pos[j-1,1]-pos[i,1])%1.0
-                    if (abs(dx2-1) < abs(dx2)):
-                        dx2=dx2-1
-                    dx3=(pos[j-1,2]-pos[i,2])%1.0
-                    if (abs(dx3-1) < abs(dx3)):
-                        dx3=dx3-1
-                    dx=cell[0,0]*dx1+cell[1,0]*dx2+cell[2,0]*dx3
-                    dy=cell[0,1]*dx1+cell[1,1]*dx2+cell[2,1]*dx3
-                    dz=cell[0,2]*dx1+cell[1,2]*dx2+cell[2,2]*dx3
-                    dd=math.sqrt(dx**2+dy**2+dz**2)
-                    if(dd < 2*rad):
-                        w22=math.sqrt(wp_atom[iatom_type[i]]*wp_atom[iatom_type[j-1]])
-                        yy=math.pi*dd/(4*rad)
-                        dE=dE+0.5*4*w22*(rad/dd)**12*math.cos(yy)**2
-                        dEdd=4*w22*(-12*(rad/dd)**12/dd*math.cos(yy)**2-(math.pi/(2*rad))*math.cos(yy)*math.sin(yy)*(rad/dd)**12)
 
-                        dFx=dFx-dEdd*dx/dd       #! note, -sign, because dx=d(j)-x(i)
-                        dFy=dFy-dEdd*dy/dd
-                        dFz=dFz-dEdd*dz/dd
-            Ep[i]=Ep[i]+dE
-            Fp[i,0]=Fp[i,0]+dFx
-            Fp[i,1]=Fp[i,1]+dFy
-            Fp[i,2]=Fp[i,2]+dFz
+        calc_rep.calc_replusive(num_neigh,list_neigh,cell,pos,iatom_type,rad_atom,wp_atom)
+        dE=cp.array(calc_rep.energy).reshape((-1,1))
+        dF=cp.array(calc_rep.force).transpose()
+        Ep=Ep+dE
+        Fp=Fp+dF
+        calc_rep.deallo()
 
+        # for i in range(len(itype)):
+        #     rad1=rad_atom[iatom_type[i]]
+        #     dE=0.0
+        #     dFx=0.0
+        #     dFy=0.0
+        #     dFz=0.0
+        #     for j in nblist[i,:]:
+        #         if (j-1) != i and j > 0:
+        #             rad2 = rad_atom[iatom_type[j-1]]
+        #             rad=rad1+rad2
+        #             dx1=(pos[j-1,0]-pos[i,0])%1.0
+        #             if (abs(dx1-1) < abs(dx1)):
+        #                 dx1=dx1-1
+        #             dx2=(pos[j-1,1]-pos[i,1])%1.0
+        #             if (abs(dx2-1) < abs(dx2)):
+        #                 dx2=dx2-1
+        #             dx3=(pos[j-1,2]-pos[i,2])%1.0
+        #             if (abs(dx3-1) < abs(dx3)):
+        #                 dx3=dx3-1
+        #             dx=cell[0,0]*dx1+cell[1,0]*dx2+cell[2,0]*dx3
+        #             dy=cell[0,1]*dx1+cell[1,1]*dx2+cell[2,1]*dx3
+        #             dz=cell[0,2]*dx1+cell[1,2]*dx2+cell[2,2]*dx3
+        #             # dd=math.sqrt(dx**2+dy**2+dz**2)
+        #             # [dx,dy,dz]=self.get_distance(i,j-1,mic=True,vector=True)
+        #             dd=math.sqrt(dx**2+dy**2+dz**2)
+        #             if(dd < 2*rad):
+        #                 w22=math.sqrt(wp_atom[iatom_type[i]]*wp_atom[iatom_type[j-1]])
+        #                 yy=math.pi*dd/(4*rad)
+        #                 dE=dE+0.5*4*w22*(rad/dd)**12*math.cos(yy)**2
+        #                 dEdd=4*w22*(-12*(rad/dd)**12/dd*math.cos(yy)**2-(math.pi/(2*rad))*math.cos(yy)*math.sin(yy)*(rad/dd)**12)
+
+        #                 dFx=dFx-dEdd*dx/dd       #! note, -sign, because dx=d(j)-x(i)
+        #                 dFy=dFy-dEdd*dy/dd
+        #                 dFz=dFz-dEdd*dz/dd
+        #     Ep[i]=Ep[i]+dE
+        #     Fp[i,0]=Fp[i,0]+dFx
+        #     Fp[i,1]=Fp[i,1]+dFy
+        #     Fp[i,2]=Fp[i,2]+dFz
+            # if abs(dFx) > 0.5 or abs(dFy)>0.5 or abs(dFz)>0.5:
+            #     print(i+1,'  ',dFx,'  ',dFy,'  ',dFz)
+            # print('dFx:',dFx)
+            # print('dFy:',dFy)
+            # print('dFz:',dFz)
+        # print("repulsive time: ",time.time()-start3)
         if pm.add_force:
-            add_force=np.loadtxt('add_force')
-            for i in range(1,len(add_force)):                
-                Fp[add_force[i,0]-1,0]=Fp[add_force[i,0]-1,0]+(add_force[i,1]-1)*add_force[i,2]
-
+            add_force=self.add_force
+            if int(add_force[0,1])==0:
+                for i in range(1,len(add_force)):                
+                    Fp[add_force[i,0]-1,0]=Fp[add_force[i,0]-1,0]+(add_force[i,1]-1)*add_force[i,2]
+            if int(add_force[0,1])==2:
+                for i in range(1,len(add_force)):                
+                    Fp[add_force[i,0]-1,2]=Fp[add_force[i,0]-1,2]+(add_force[i,1]-1)*add_force[i,2]
+            if int(add_force[0,1])==1:
+                for i in range(1,len(add_force)):                
+                    Fp[add_force[i,0]-1,1]=Fp[add_force[i,0]-1,1]+(add_force[i,1]-1)*add_force[i,2]
+        
+        self.energies=cp.asnumpy(Ep).reshape(-1)
+        self.etot=cp.sum(Ep)
         self.forces = - cp.asnumpy(Fp)
+
+        #print("repulsive and add force time: ",time.time()-start3)
 
         #print("cal feat time: ",time.time()-start)
         if self.isProfile:
@@ -425,7 +470,7 @@ class MdImage(Atoms,Image,NNapiBase):
         
         self.set_pos_cell()
         if self.isNewStep:
-            print('calc in ',sys._getframe().f_code.co_name)
+            # print('calc in ',sys._getframe().f_code.co_name)
             self.calcEnergiesForces()        
         return self.etot
     
@@ -433,7 +478,7 @@ class MdImage(Atoms,Image,NNapiBase):
         
         self.set_pos_cell()
         if self.isNewStep:
-            print('calc in ',sys._getframe().f_code.co_name)
+            # print('calc in ',sys._getframe().f_code.co_name)
             self.calcEnergiesForces()        
         return self.energies
         
@@ -443,7 +488,7 @@ class MdImage(Atoms,Image,NNapiBase):
         '''
         self.set_pos_cell()
         if self.isNewStep:
-            print('calc in ',sys._getframe().f_code.co_name)
+            # print('calc in ',sys._getframe().f_code.co_name)
             self.calcEnergiesForces()        
         return self.forces
 
@@ -461,7 +506,8 @@ class MdImage(Atoms,Image,NNapiBase):
             del self.neighborDistanceVectArrayOfAllAtoms
         # cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         # pos=np.asfortranarray(self.get_scaled_positions(True).T)
-        feat,_,nblist=self.calc_feat()
+        # feat,_,nblist=self.calc_feat()
+        feat,_,list_neigh,num_neigh=self.calc_feat()
         # print(cell)
         # print(pos)
         # print(np.shape(feat))
@@ -471,42 +517,22 @@ class MdImage(Atoms,Image,NNapiBase):
         engy_out = self.nn.getEi(feat_scaled, itype)
         Ep = self.ds.post_engy(engy_out, itype)
 
-        cell=cp.asnumpy(self.cupyCell)
-        pos=self.get_scaled_positions(True)
-        rad_atom=np.array(pm.fortranFitAtomRadii)   
-        wp_atom=np.array(pm.fortranFitAtomRepulsingEnergies)
+        cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
+        pos=np.asfortranarray(self.get_scaled_positions(True).T)
+        wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+        rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
         iatom_type=np.zeros_like(itype)
         for m in range(len(itype)):
-            for k in range(len(pm.atomType)):
-                if itype[m]==pm.atomType[k]:
-                    iatom_type[m]=k
+            iatom_type[m]=pm.atomType.index(itype[m])
+        iatom_type=np.asfortranarray(iatom_type.transpose())
 
-        for i in range(len(itype)):
-            rad1=rad_atom[iatom_type[i]]
-            dE=0.0
-            for j in nblist[i,:]:
-                if (j-1) != i and j > 0:
-                    rad2 = rad_atom[iatom_type[j-1]]
-                    rad=rad1+rad2
-                    dx1=(pos[j-1,0]-pos[i,0])%1.0
-                    if (abs(dx1-1) < abs(dx1)):
-                        dx1=dx1-1
-                    dx2=(pos[j-1,1]-pos[i,1])%1.0
-                    if (abs(dx2-1) < abs(dx2)):
-                        dx2=dx2-1
-                    dx3=(pos[j-1,2]-pos[i,2])%1.0
-                    if (abs(dx3-1) < abs(dx3)):
-                        dx3=dx3-1
-                    dx=cell[0,0]*dx1+cell[1,0]*dx2+cell[2,0]*dx3
-                    dy=cell[0,1]*dx1+cell[1,1]*dx2+cell[2,1]*dx3
-                    dz=cell[0,2]*dx1+cell[1,2]*dx2+cell[2,2]*dx3
-                    dd=math.sqrt(dx**2+dy**2+dz**2)
-                    if(dd < 2*rad):
-                        w22=math.sqrt(wp_atom[iatom_type[i]]*wp_atom[iatom_type[j-1]])
-                        yy=math.pi*dd/(4*rad)
-                        dE=dE+0.5*4*w22*(rad/dd)**12*math.cos(yy)**2
-            Ep[i]=Ep[i]+dE
 
+        calc_rep.calc_rep(num_neigh,list_neigh,cell,pos,iatom_type,rad_atom,wp_atom)
+        dE=np.array(calc_rep.energy).reshape((-1,1))
+        # dF=np.array(calc_rep.force).transpose()
+        Ep=Ep+dE
+        # Fp=Fp+dF
+        calc_rep.deallo()
         # if pm.add_force:
         #     add_force=np.loadtxt('add_force')
         #     for i in range(1,len(add_force)):                

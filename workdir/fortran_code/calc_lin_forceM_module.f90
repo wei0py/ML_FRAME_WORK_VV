@@ -89,7 +89,7 @@ module calc_lin
     integer(4) :: istat
     real(8), allocatable, dimension(:) ::  const_f
     integer(4),allocatable, dimension(:) :: direction,add_force_atom
-    integer(4) :: add_force_num,power
+    integer(4) :: add_force_num,power,axis
 
     real*8,allocatable,dimension(:) :: rad_atom,wp_atom
     integer(4) :: nfeat1tm(100),ifeat_type(100),nfeat1t(100)
@@ -259,7 +259,7 @@ module calc_lin
 !********************add_force****************
     open(10,file="add_force")
     rewind(10)
-    read(10,*) add_force_num
+    read(10,*) add_force_num,axis
     allocate(add_force_atom(add_force_num))
     allocate(direction(add_force_num))
     allocate(const_f(add_force_num))
@@ -378,14 +378,14 @@ module calc_lin
         istat=0
         error_msg=''
         !open(99,file='log.txt',position='append')
-        write(*,*)'feat_shape'
-        write(*,*)feat_shape
-        write(*,*)'dfeat_shape'
-        write(*,*)dfeat_shape
-        write(*,*)'list_neigh_shape'
-        write(*,*)list_neigh_shape
-        write(*,*)"nfeat1m,natom,m_neigh"
-        write(*,*)nfeat1m,natom,m_neigh
+        !write(*,*)'feat_shape'
+        !write(*,*)feat_shape
+        !write(*,*)'dfeat_shape'
+        !write(*,*)dfeat_shape
+        !write(*,*)'list_neigh_shape'
+        !write(*,*)list_neigh_shape
+        !write(*,*)"nfeat1m,natom,m_neigh"
+        !write(*,*)nfeat1m,natom,m_neigh
         !close(99)
         !open(99,file='log.txt',position='append')
         if (feat_shape(1)/=nfeat1m .or. feat_shape(2)/=natom &
@@ -546,11 +546,13 @@ module calc_lin
         end do
 
     do j=1,add_force_num
-        do i=1,natom
-            if (i .eq. add_force_atom(j) ) then
-                force_pred(1,i)= force_pred(1,i)+(direction(j)-1)*const_f(j)   !give a force on x axis
-            end if
-        enddo
+        
+            
+        if (axis.eq.0) force_pred(1,add_force_atom(j))= force_pred(1,add_force_atom(j))+(direction(j)-1)*const_f(j)   !give a force on x axis
+        if (axis.eq.1) force_pred(2,add_force_atom(j))= force_pred(2,add_force_atom(j))+(direction(j)-1)*const_f(j)
+        if (axis.eq.2) force_pred(3,add_force_atom(j))= force_pred(3,add_force_atom(j))+(direction(j)-1)*const_f(j)
+           
+       
     enddo
        
 !ccccccccccccccccccccccccccccccccccccccccccc

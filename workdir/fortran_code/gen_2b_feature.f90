@@ -192,6 +192,7 @@ subroutine gen_feature(AL,xatom)
     integer,allocatable,dimension (:,:) :: num_neigh_M
     integer,allocatable,dimension (:,:) :: list_neigh_alltype
     integer,allocatable,dimension (:) :: num_neigh_alltype
+    real*8 :: timestart, timefinish
     ! real*8,allocatable,dimension (:,:,:,:) :: dfeat
 !cccccccccccccccccccccccccccccccccccccccccccccccccccc
     if (allocated(dfeat)) then
@@ -237,11 +238,12 @@ subroutine gen_feature(AL,xatom)
       endif
      enddo
 !ccccccccccccccccccccccccccccccccccccccccccc
-
+!    call cpu_time(timestart)
     call find_neighbore(iatom,natom,xatom,AL,Rc_type,num_neigh,list_neigh, &
        dR_neigh,iat_neigh,ntype,iat_type,m_neigh,Rc_M,map2neigh_M,list_neigh_M, &
        num_neigh_M,iat_neigh_M)
-
+!    call cpu_time(timefinish)
+!    write(*,*) 'find_nei time: ', timefinish-timestart
 !ccccccccccccccccccccccccccccccccc
 !ccccccccccccccccccccccccccccccccc
 
