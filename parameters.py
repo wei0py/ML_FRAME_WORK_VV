@@ -8,25 +8,27 @@ isClassify=False
 isRunMd=False                                   #是否训练运行md  default:False
 isRunMd_nn=False
 isFollowMd=False                                #是否是接续上次的md继续运行  default:False
+isFitVdw=False
 
 #************** Dir **********************
-codedir='/ssd/linwang/ALL_ML_CODE/ML_FRAME_WORK/workdir'
-trainSetDir='.'
-fortranFitSourceDir='/ssd/linwang/ALL_ML_CODE/ML_FRAME_WORK/fit'
+codedir='/home/buyu/MLFF/new-repulsive/ML_FRAME_WORK_vdw/workdir'
+trainSetDir='/home/buyu/MLFF/AlHcomb'
+fortranFitSourceDir='/home/buyu/MLFF/new-repulsive/ML_FRAME_WORK_vdw/fit'
 #fitModelDir='/ssd/buyu/fit/fread_dfeat'
 fitModelDir='./fread_dfeat'
-genFeatDir='/ssd/linwang/ALL_ML_CODE/ML_FRAME_WORK/gen_feature'
-mdImageFileDir='./md'                              #设置md的初始image的文件所在的文件夹  default:'.'
+genFeatDir='/home/buyu/MLFF/new-repulsive/ML_FRAME_WORK_vdw/gen_feature'
+mdImageFileDir='/home/buyu/MLFF/MD/AlHbulk'                              #设置md的初始image的文件所在的文件夹  default:'.'
 PWmatDir='/home/buyu/PWmat/MDAlHsml3_loop'
 #isCalcFeat=True
+#isFitVdw=True
 #isFitLinModel=True
 #isRunMd=True
-#isRunMd_nn=True
+isRunMd_nn=True
 isFollowMd=False                                #是否是接续上次的md继续运行  default:False
 add_force=False           # for NN md
 #********* for gen_feature.in *********************
-atomType=[6,29]  
-maxNeighborNum=150
+atomType=[1,13]  
+maxNeighborNum=100
 
 iflag_PCA=0
 Rc_M=5.5                     # max of Rcut
@@ -88,10 +90,10 @@ fortranFitRidgePenaltyTerm=0.0001               #fortran fitting时最后岭回�
 #*********************** for MD **********************
 
 #以下部分为md设置的参数 
-mdCalcModel='vv'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'vv'
+mdCalcModel='lin'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'vv'
 mdRunModel='nvt'                                #md运行时的模型,'nve' or 'nvt' or 'npt', default:'nve'
-mdStepNum=4000                                  #md运行的步数,default:1000
-mdStepTime=0.1                                  #md运行时一步的时长(fs), default:1.0
+mdStepNum=400                                  #md运行的步数,default:1000
+mdStepTime=1                                  #md运行时一步的时长(fs), default:1.0
 mdStartTemperature=300                          #md运行时的初始温度
 mdEndTemperature=300                            #md运行采用'nvt'模型时，稳定温度(or npt)
 mdNvtTaut=0.1*1000                               #md运行采用'nvt'模型时，Berendsen温度对的时间常数 (or npt)
@@ -140,14 +142,14 @@ flag_plt = False
 train_stage = 1      # only 1 or 2, 1 is begining training from energy and then force+energy, 2 is directly training from force+energy
 train_verb = 0       
 
-learning_rate= 1e-4
+learning_rate= 1e-3
 batch_size = 40        
 rtLossE      = 0.8     # weight for energy, NN fitting 各个原子能量所占的权重
 rtLossF      = 0.2     # weight for force, NN fitting 各个原子所受力所占的权重
 bias_corr = True
 #epochs_pretrain = 1001
 epochs_alltrain = 1001     # energy 训练循环次数
-epochs_Fi_train = 101       # force+energy 训练循环次数 
+epochs_Fi_train = 11       # force+energy 训练循环次数 
 
 iFi_repeat      = 1
 eMAE_err = 0.01 # eV
@@ -209,8 +211,8 @@ atomTypeNum=len(atomType)
 #         else:
 #             pass
 nFeats=np.array([realFeatNum,realFeatNum,realFeatNum])
-dir_work = os.path.join(trainSetDir,'NN_output/')          # The major dir that store I/O files and data
-
+# dir_work = os.path.join(trainSetDir,'NN_output/')          # The major dir that store I/O files and data
+dir_work = os.path.join(fitModelDir,'NN_output/')
 # f_post  = '.csv'              # postfix of feature files
 # f_txt_post = '.txt'
 

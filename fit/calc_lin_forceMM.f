@@ -63,7 +63,8 @@
        integer,allocatable,dimension(:,:) :: nfeat,ipos_feat
 
        real*8,allocatable,dimension(:,:) :: xatom,xatom_tmp
-       real*8,allocatable,dimension(:) :: rad_atom,wp_atom
+       real*8,allocatable,dimension(:) :: rad_atom,E_ave_vdw
+       real*8,allocatable,dimension(:,:,:) :: wp_atom
        real*8 AL(3,3),pi,dE,dFx,dFy,dFz,AL_tmp(3,3)
 
        integer nfeat1tm(100),ifeat_type(100),nfeat1t(100)
@@ -81,13 +82,34 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         allocate(nfeat2(ntype))
         allocate(nfeat2i(ntype))
         allocate(rad_atom(ntype))
-        allocate(wp_atom(ntype))
+        allocate(E_ave_vdw(ntype))
+        allocate(wp_atom(ntype,ntype,2))
+        wp_atom=0.d0
         do i=1,ntype
-        read(10,*) itype_atom(i),
-     &   rad_atom(i),wp_atom(i)
+        read(10,*) itype_atom(i)
+!     &   rad_atom(i),wp_atom(i)
+!     &   rad_atom(i)
         enddo
        read(10,*) weight_E,weight_E0,weight_F,delta
        close(10)
+
+        open(10,file="vdw_fitB.ntype")
+       rewind(10)
+       read(10,*) ntype_t,nterm
+       if(nterm.gt.2) then
+       write(6,*) "nterm.gt.2,stop"
+       stop
+       endif
+       if(ntype_t.ne.ntype) then
+       write(6,*) "ntype not same in vwd_fitB.ntype,something wrong"
+       stop
+       endif
+        do itype1=1,ntype
+        read(10,*) itype_t,rad_atom(itype1),E_ave_vdw(itype1),
+     &             ((wp_atom(i,itype1,j1),i=1,ntype),j1=1,nterm)
+       enddo
+       close(10)
+
 
 
         open(10,file="feat.info")
@@ -606,14 +628,25 @@ ccccccccccccccccccccccccccccccccccccccccccc
        dz=AL(3,1)*dx1+AL(3,2)*dx2+AL(3,3)*dx3
        dd=dsqrt(dx**2+dy**2+dz**2)
        if(dd.lt.2*rad) then
-       w22=dsqrt(wp_atom(iatom_type(i))*wp_atom(iatom_type(j)))
+!       w22=dsqrt(wp_atom(iatom_type(i))*wp_atom(iatom_type(j)))
+!       w22=dsqrt(wp_atom(iatom_type(i))*wp_atom(iatom_type(j)))
+        w22_1=wp_atom(iatom_type(j),iatom_type(i),1)
+        w22_2=wp_atom(iatom_type(j),iatom_type(i),2)
+        w22F_1=(wp_atom(iatom_type(j),iatom_type(i),1)+
+     &      wp_atom(iatom_type(i),iatom_type(j),1))/2     ! take the average for force calc.
+        w22F_2=(wp_atom(iatom_type(j),iatom_type(i),2)+
+     &      wp_atom(iatom_type(i),iatom_type(j),2))/2     ! take the average for force calc.
+
        yy=pi*dd/(4*rad)
 c       dE=dE+0.5*w22*exp((1-dd/rad)*4.0)*cos(yy)**2
 c       dEdd=w22*exp((1-dd/rad)*4.d0)*((-4/rad)*cos(yy)**2
 c     &   -(pi/(2*rad))*cos(yy)*sin(yy))
-       dE=dE+0.5*4*w22*(rad/dd)**12*cos(yy)**2
-       dEdd=4*w22*(-12*(rad/dd)**12/dd*cos(yy)**2
+       dE=dE+0.5*4*(w22_1*(rad/dd)**12*cos(yy)**2+
+     &     w22_2*(rad/dd)**6*cos(yy)**2)
+       dEdd=4*(w22F_1*(-12*(rad/dd)**12/dd*cos(yy)**2
      &   -(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**12)
+     &   +W22F_2*(-6*(rad/dd)**6/dd*cos(yy)**2
+     &   -(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**6))
 
        dFx=dFx-dEdd*dx/dd       ! note, -sign, because dx=d(j)-x(i)
        dFy=dFy-dEdd*dy/dd

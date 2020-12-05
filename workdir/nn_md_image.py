@@ -57,6 +57,7 @@ class MdImage(Atoms,Image,NNapiBase):
         NNapiBase.__init__(self,nn=nn,data_scaler=data_scaler)
         
         self.isCheckVar=isCheckVar
+        calc_rep.read_wp(pm.fitModelDir,pm.ntypes)
         if pm.add_force:
             self.add_force=np.loadtxt('add_force')
         for i in range(len(pm.use_Ftype)):
@@ -104,6 +105,7 @@ class MdImage(Atoms,Image,NNapiBase):
         if pm.add_force:
             self.add_force=np.loadtxt('add_force')
         # calc_feature.set_paths(pm.fitModelDir)
+        calc_rep.read_wp(pm.fitModelDir,pm.ntypes)
         for i in range(len(pm.use_Ftype)):
             if pm.use_Ftype[i]==1:
                 calc_ftype1.load_model()
@@ -171,7 +173,7 @@ class MdImage(Atoms,Image,NNapiBase):
         self.isCheckVar=isCheckVar
         if pm.add_force:
             self.add_force=np.loadtxt('add_force')
-        
+        calc_rep.read_wp(pm.fitModelDir,pm.ntypes)
         for i in range(len(pm.use_Ftype)):
             if pm.use_Ftype[i]==1:
                 calc_ftype1.load_model()
@@ -367,15 +369,15 @@ class MdImage(Atoms,Image,NNapiBase):
         # start3=time.time()
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
-        wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
-        rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
+        # wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+        # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
         iatom_type=np.zeros_like(itype)
         for m in range(len(itype)):
             iatom_type[m]=pm.atomType.index(itype[m])
         iatom_type=np.asfortranarray(iatom_type.transpose())
 
 
-        calc_rep.calc_replusive(num_neigh,list_neigh,cell,pos,iatom_type,rad_atom,wp_atom)
+        calc_rep.calc_replusive(num_neigh,list_neigh,cell,pos,iatom_type)
         dE=cp.array(calc_rep.energy).reshape((-1,1))
         dF=cp.array(calc_rep.force).transpose()
         Ep=Ep+dE
@@ -519,15 +521,15 @@ class MdImage(Atoms,Image,NNapiBase):
 
         cell=np.asfortranarray(cp.asnumpy(self.cupyCell.T))
         pos=np.asfortranarray(self.get_scaled_positions(True).T)
-        wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
-        rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
+        # wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+        # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
         iatom_type=np.zeros_like(itype)
         for m in range(len(itype)):
             iatom_type[m]=pm.atomType.index(itype[m])
         iatom_type=np.asfortranarray(iatom_type.transpose())
 
 
-        calc_rep.calc_rep(num_neigh,list_neigh,cell,pos,iatom_type,rad_atom,wp_atom)
+        calc_rep.calc_rep(num_neigh,list_neigh,cell,pos,iatom_type)
         dE=np.array(calc_rep.energy).reshape((-1,1))
         # dF=np.array(calc_rep.force).transpose()
         Ep=Ep+dE

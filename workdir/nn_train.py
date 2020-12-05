@@ -52,6 +52,7 @@ class Trainer(NNapiBase):
         #self.optFi  = tf.train.AdadeltaOptimizer(learning_rate)
         #self.optFi  = tf.train.RMSPropOptimizer(learning_rate)
         self.optFi_op = self.optFi.minimize(self.lossEF)
+        read_dfeatnn.read_wp(pm.fitModelDir,pm.ntypes)
 
     #===========================================================================
     
@@ -304,9 +305,9 @@ class Trainer(NNapiBase):
                         image_num[mm] = image_nums[mm][rndind[nextImg+i]]
                         pos_num[mm] = pos_nums[mm][rndind[nextImg+i]]
                         itype_atom=np.asfortranarray(np.array(pm.atomType).transpose())
-                        wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
-                        rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
-                        read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom,rad_atom,wp_atom)
+                        # wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+                        # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
+                        read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom)
 
                         feat_tmp=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
 
@@ -498,9 +499,9 @@ class Trainer(NNapiBase):
                     image_num[mm] = image_nums[mm][nextImg+i]
                     pos_num[mm] = pos_nums[mm][nextImg+i]
                     itype_atom=np.asfortranarray(np.array(pm.atomType).transpose())
-                    wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
-                    rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
-                    read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom,rad_atom,wp_atom)
+                    # wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
+                    # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
+                    read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom)
 
                     feat_tmp=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
                     dfeat_tmp=np.array(read_dfeatnn.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)

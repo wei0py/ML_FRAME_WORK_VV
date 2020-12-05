@@ -112,9 +112,9 @@ cccccccccccccccc  two different ways to select the test cases
        write(6,*) "ntrain,ntest=", num_case-ntest,ntest
 
        ncase=num_case-ntest
-       allocate(feat_case(nfeat0,ncase))
+       allocate(feat_case(nfeat,ncase))
        allocate(Ei_case(ncase))
-       allocate(feat_test(nfeat0,ntest))
+       allocate(feat_test(nfeat,ntest))
        allocate(Ei_test(ntest))
       
        itest=0
@@ -150,8 +150,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        S=0.d0
        call dgemm('N','T',num_ref,num_ref,num_case,1.d0,
-     & feat_case,
-     & num_ref,feat_case,num_ref,0.d0,S,num_ref)
+     & feat_case,nfeat,                        ! there is a bug in the original code 
+     & feat_case,nfeat,0.d0,S,num_ref)
 
 
        do j=1,num_ref

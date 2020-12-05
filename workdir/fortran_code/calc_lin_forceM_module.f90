@@ -2,41 +2,7 @@
 module calc_lin
     !implicit double precision (a-h, o-z)
     implicit none
-  
-  
-    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc 
-    !integer, allocatable, dimension (:) :: iatom, iatom_type, itype_atom
-    !real *8, allocatable, dimension (:) :: energy, energy_pred
-    !real *8, allocatable, dimension (:, :) :: feat, feat2
-    !real *8, allocatable, dimension (:, :, :) :: feat_type, feat2_type
-    !integer, allocatable, dimension (:) :: num_neigh !, num, num_atomtype
-    !integer, allocatable, dimension (:, :) :: list_neigh, ind_type  
-    !real *8, allocatable, dimension (:, :, :, :) :: dfeat, dfeat2
-    !real *8, allocatable, dimension (:, :, :) :: dfeat_type, dfeat2_type  
-    !real *8, allocatable, dimension (:, :) :: aa                                !calc_linear无用数据
-    !real *8, allocatable, dimension (:) :: bb  
-    !real *8, allocatable, dimension (:, :, :) :: gfeat_type                     !calc_linear无用数据
-    !real *8, allocatable, dimension (:, :) :: gfeat_tmp                         !calc_linear无用数据  
-    !real *8, allocatable, dimension (:, :, :) :: aa_type                        !calc_linear无用数据
-    !real *8, allocatable, dimension (:, :) :: bb_type, bb_type0  
-    !real *8, allocatable, dimension (:, :) :: ss_tmp, ss_tmp2                   !calc_linear无用数据  
-    !integer, allocatable, dimension (:) :: ipiv                                 !calc_linear无用数据  
-    !real *8, allocatable, dimension (:, :) :: w_feat                            !calc_linear无用数据
-    !real *8, allocatable, dimension (:, :, :) :: feat2_ref                      !calc_linear无用数据  
-    !real *8, allocatable, dimension (:, :, :) :: pv
-    !real *8, allocatable, dimension (:, :) :: feat2_shift, feat2_scale  
-    !real *8, allocatable, dimension (:, :) :: ww, vv, qq                        !calc_linear无用数据
-    !real *8, allocatable, dimension (:, :, :, :) :: ss  
-    !real *8, allocatable, dimension (:, :) :: gfeat2, dgfeat2                   !calc_linear无用数据  
-    !real *8, allocatable, dimension (:, :) :: force, force_pred  
-    !integer, allocatable, dimension (:) :: num_inv                              !calc_linear无用数据
-    !integer, allocatable, dimension (:, :) :: index_inv, index_inv2             !calc_linear无用数据
-    !character (len=80) dfeat_n(400)  
-    !integer, allocatable, dimension (:) ::  num_ref, num_refi, nfeat1, nfeat2,nfeat2i  
-    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  
-  
-  
+
   
   !!!!!!!!!!!!!          以下为  module variables     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
@@ -46,12 +12,14 @@ module calc_lin
     character(80),parameter :: model_coefficients_path0="linear_fitB.ntype"
     character(80),parameter :: weight_feat_path_header0="weight_feat."
     character(80),parameter :: feat_pv_path_header0="feat_PV."
+    character(80),parameter :: vdw_path0="vdw_fitB.ntype"
     
     character(200) :: fit_input_path=trim(fit_input_path0)
     character(200) :: feat_info_path=trim(feat_info_path0)
     character(200) :: model_coefficients_path=trim(model_coefficients_path0)
     character(200) :: weight_feat_path_header=trim(weight_feat_path_header0)
     character(200) :: feat_pv_path_header=trim(feat_pv_path_header0)
+    character(200) :: vdw_path=trim(vdw_path0)
   
     integer(4) :: ntype                                    !模型所有涉及的原子种类
     integer(4) :: m_neigh                                  !模型所使用的最大近邻数(考虑这个数是否可以不用)
@@ -91,7 +59,9 @@ module calc_lin
     integer(4),allocatable, dimension(:) :: direction,add_force_atom
     integer(4) :: add_force_num,power,axis
 
-    real*8,allocatable,dimension(:) :: rad_atom,wp_atom
+    ! real*8,allocatable,dimension(:) :: rad_atom,wp_atom
+    real*8,allocatable,dimension(:) :: rad_atom,E_ave_vdw
+    real*8,allocatable,dimension(:,:,:) :: wp_atom
     integer(4) :: nfeat1tm(100),ifeat_type(100),nfeat1t(100)
     
   
@@ -118,13 +88,14 @@ module calc_lin
             model_coefficients_path=fit_dir//'/'//trim(model_coefficients_path0)
             weight_feat_path_header=fit_dir//'/'//trim(weight_feat_path_header0)
             feat_pv_path_header=fit_dir//'/'//trim(feat_pv_path_header0)
+            vdw_path=fit_dir//'/'//trim(vdw_path0)
         end if
     end subroutine set_paths
     
     subroutine load_model()
     
-        integer(4) :: nimage,num_refm,num_reftot,nfeat1_tmp,nfeat2_tmp,itype,i,k,ntmp,itmp
-        integer(4) :: iflag_PCA,nfeat_type,kkk,ntype_tmp,iatom_tmp
+        integer(4) :: nimage,num_refm,num_reftot,nfeat1_tmp,nfeat2_tmp,itype,i,k,ntmp,itmp,itype1,j1
+        integer(4) :: iflag_PCA,nfeat_type,kkk,ntype_tmp,iatom_tmp,ntype_t,nterm,itype_t
         real(8) :: dist0
 
         ! integer(4),allocatable,dimension(:,:) :: nfeat,ipos_feat
@@ -139,6 +110,7 @@ module calc_lin
             deallocate (nfeat2)
             deallocate (rad_atom)
             deallocate (wp_atom)
+            deallocate (E_ave_vdw)
             deallocate (nfeat2i)
             deallocate (num)                              !image数据,在此处allocate，但在set_image_info中赋值
             deallocate (num_atomtype)                     !image数据,在此处allocate，但在set_image_info中赋值
@@ -161,15 +133,35 @@ module calc_lin
         
         allocate (num(ntype))                              !image数据,在此处allocate，但在set_image_info中赋值
         allocate (num_atomtype(ntype))                     !image数据,在此处allocate，但在set_image_info中赋值
-        allocate (rad_atom(ntype))
-        allocate (wp_atom(ntype))
+        ! allocate (rad_atom(ntype))
+        ! allocate (wp_atom(ntype))
+        allocate(rad_atom(ntype))
+        allocate(E_ave_vdw(ntype))
+        allocate(wp_atom(ntype,ntype,2))
+        wp_atom=0.d0
 
         do i=1,ntype
-            read(10,*) itype_atom(i),rad_atom(i),wp_atom(i)
+            read(10,*) itype_atom(i)!,rad_atom(i),wp_atom(i)
         enddo
         ! read(10,*) weight_E,weight_E0,weight_F
         close(10)
-        
+! ****************** read vdw ************************
+        open(10,file=trim(vdw_path))
+        rewind(10)
+        read(10,*) ntype_t,nterm
+        if(nterm.gt.2) then
+        write(6,*) "nterm.gt.2,stop"
+        stop
+        endif
+        if(ntype_t.ne.ntype) then
+        write(6,*) "ntype not same in vwd_fitB.ntype,something wrong"
+        stop
+        endif
+         do itype1=1,ntype
+         read(10,*) itype_t,rad_atom(itype1),E_ave_vdw(itype1),((wp_atom(i,itype1,j1),i=1,ntype),j1=1,nterm)
+        enddo
+        close(10)
+
 ! **************** read feat.info ********************
         open(10,file=trim(feat_info_path))
         rewind(10)
@@ -353,7 +345,7 @@ module calc_lin
         integer(4),dimension(4) :: dfeat_shape
 
         real*8 pi,dE,dFx,dFy,dFz
-        real*8 rad1,rad2,rad,dx1,dx2,dx3,dx,dy,dz,dd,yy,w22,dEdd,d
+        real*8 rad1,rad2,rad,dx1,dx2,dx3,dx,dy,dz,dd,yy,w22,dEdd,d,w22_1,w22_2,w22F_1,w22F_2
 
 
 
@@ -579,14 +571,27 @@ module calc_lin
        dz=AL(3,1)*dx1+AL(3,2)*dx2+AL(3,3)*dx3
        dd=dsqrt(dx**2+dy**2+dz**2)
        if(dd.lt.2*rad) then
-       w22=dsqrt(wp_atom(iatom_type(i))*wp_atom(iatom_type(j)))
+!        w22=dsqrt(wp_atom(iatom_type(i))*wp_atom(iatom_type(j)))
+!        yy=pi*dd/(4*rad)
+! !       dE=dE+0.5*w22*exp((1-dd/rad)*4.0)*cos(yy)**2
+! !       dEdd=w22*exp((1-dd/rad)*4.d0)*((-4/rad)*cos(yy)**2
+! !     &   -(pi/(2*rad))*cos(yy)*sin(yy))
+!        dE=dE+0.5*4*w22*(rad/dd)**12*cos(yy)**2
+!        dEdd=4*w22*(-12*(rad/dd)**12/dd*cos(yy)**2  &
+!         -(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**12)
+        w22_1=wp_atom(iatom_type(j),iatom_type(i),1)
+        w22_2=wp_atom(iatom_type(j),iatom_type(i),2)
+        w22F_1=(wp_atom(iatom_type(j),iatom_type(i),1)+wp_atom(iatom_type(i),iatom_type(j),1))/2     ! take the average for force calc.
+        w22F_2=(wp_atom(iatom_type(j),iatom_type(i),2)+wp_atom(iatom_type(i),iatom_type(j),2))/2     ! take the average for force calc.
+
        yy=pi*dd/(4*rad)
-!       dE=dE+0.5*w22*exp((1-dd/rad)*4.0)*cos(yy)**2
-!       dEdd=w22*exp((1-dd/rad)*4.d0)*((-4/rad)*cos(yy)**2
-!     &   -(pi/(2*rad))*cos(yy)*sin(yy))
-       dE=dE+0.5*4*w22*(rad/dd)**12*cos(yy)**2
-       dEdd=4*w22*(-12*(rad/dd)**12/dd*cos(yy)**2  &
-        -(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**12)
+! c       dE=dE+0.5*w22*exp((1-dd/rad)*4.0)*cos(yy)**2
+! c       dEdd=w22*exp((1-dd/rad)*4.d0)*((-4/rad)*cos(yy)**2
+! c     &   -(pi/(2*rad))*cos(yy)*sin(yy))
+       dE=dE+0.5*4*(w22_1*(rad/dd)**12*cos(yy)**2+w22_2*(rad/dd)**6*cos(yy)**2)
+       dEdd=4*(w22F_1*(-12*(rad/dd)**12/dd*cos(yy)**2-(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**12)   &
+      +W22F_2*(-6*(rad/dd)**6/dd*cos(yy)**2-(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**6))
+
 
        dFx=dFx-dEdd*dx/dd       ! note, -sign, because dx=d(j)-x(i)
        dFy=dFy-dEdd*dy/dd
@@ -652,7 +657,7 @@ module calc_lin
         integer(4),dimension(4) :: dfeat_shape
 
         real*8 pi,dE,dFx,dFy,dFz
-        real*8 rad1,rad2,rad,dx1,dx2,dx3,dx,dy,dz,dd,yy,w22,dEdd,d
+        real*8 rad1,rad2,rad,dx1,dx2,dx3,dx,dy,dz,dd,yy,w22,dEdd,d,w22_1,w22_2,w22F_1,w22F_2
 
 
 
@@ -777,8 +782,19 @@ module calc_lin
        dz=AL(3,1)*dx1+AL(3,2)*dx2+AL(3,3)*dx3
        dd=dsqrt(dx**2+dy**2+dz**2)
        if(dd.lt.2*rad) then
-       w22=dsqrt(wp_atom(iatom_type(i))*wp_atom(iatom_type(j)))
+        w22_1=wp_atom(iatom_type(j),iatom_type(i),1)
+        w22_2=wp_atom(iatom_type(j),iatom_type(i),2)
+        ! w22F_1=(wp_atom(iatom_type(j),iatom_type(i),1)+wp_atom(iatom_type(i),iatom_type(j),1))/2     ! take the average for force calc.
+        ! w22F_2=(wp_atom(iatom_type(j),iatom_type(i),2)+wp_atom(iatom_type(i),iatom_type(j),2))/2     ! take the average for force calc.
+
        yy=pi*dd/(4*rad)
+! c       dE=dE+0.5*w22*exp((1-dd/rad)*4.0)*cos(yy)**2
+! c       dEdd=w22*exp((1-dd/rad)*4.d0)*((-4/rad)*cos(yy)**2
+! c     &   -(pi/(2*rad))*cos(yy)*sin(yy))
+       dE=dE+0.5*4*(w22_1*(rad/dd)**12*cos(yy)**2+w22_2*(rad/dd)**6*cos(yy)**2)
+    !    dEdd=4*(w22F_1*(-12*(rad/dd)**12/dd*cos(yy)**2-(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**12)   &
+    !   +W22F_2*(-6*(rad/dd)**6/dd*cos(yy)**2-(pi/(2*rad))*cos(yy)*sin(yy)*(rad/dd)**6))
+
 !       dE=dE+0.5*w22*exp((1-dd/rad)*4.0)*cos(yy)**2
 !       dEdd=w22*exp((1-dd/rad)*4.d0)*((-4/rad)*cos(yy)**2
 !     &   -(pi/(2*rad))*cos(yy)*sin(yy))

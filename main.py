@@ -5,7 +5,7 @@ workpath=os.path.abspath(pm.codedir)
 sys.path.append(workpath)
 import prepare as pp
 import lppData as lppData
-
+import fortran_fitting as ff
 # genFeatInputFile='./gen_feature.in'
 if os.path.exists('./input/'):
     pass
@@ -56,6 +56,17 @@ else:
     # pp.movementUsed()
     # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
     # pp.writeFitInput()
+if pm.isFitVdw:
+    ff.makeFitDirAndCopySomeFiles()
+    # readFittingParameters()
+    ff.copyData()
+    ff.writeFitInput()
+    ff.FeatCollectIn()
+    command='make pca -C'+pm.fitModelDir
+    os.system(command)
+    command='make vdw -C'+pm.fitModelDir
+    os.system(command)
+
 
 if pm.isClassify:
     if os.path.exists(os.path.join(pm.trainSetDir,'lppData.txt')):
@@ -68,10 +79,11 @@ if pm.isClassify:
     if shift:
         # pp.collectAllSourceFiles()
         pp.readFeatnum()
-        import fortran_fitting as ff
+        # import fortran_fitting as ff
         ff.makeFitDirAndCopySomeFiles()
         # readFittingParameters()
         ff.copyData()
+        ff.FeatCollectIn()
         ff.writeFitInput()
         command='make pca -C'+pm.fitModelDir
         # print(command)
@@ -94,9 +106,9 @@ if pm.isClassify:
 #os.system('python cluster_trainData.py')
 
 if pm.isFitLinModel:
-    import fortran_fitting as fortranfit
+    # import fortran_fitting as fortranfit
     # pp.readFeatnum(os.path.join(pm.sourceFileList[0],'info.txt'))
-    fortranfit.fit()
+    ff.fit()
 
 if pm.isRunMd:
     # import preparatory_work as ppw
