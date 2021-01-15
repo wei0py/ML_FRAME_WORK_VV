@@ -373,11 +373,11 @@ class MdImage(Atoms,Image):
             self.calcForceTime+=time.time()-start
             print(self.calcFeatTime,self.calcForceTime)
         
-    def get_potential_energy(self):
+    def get_potential_energy(self,force_consistent=False):
         
         self.set_pos_cell()
         if self.isNewStep:
-            print('calc in ',sys._getframe().f_code.co_name)
+            # print('calc in ',sys._getframe().f_code.co_name)
             self.calcEnergiesForces()        
         return self.etot
     
@@ -385,7 +385,7 @@ class MdImage(Atoms,Image):
         
         self.set_pos_cell()
         if self.isNewStep:
-            print('calc in ',sys._getframe().f_code.co_name)
+            # print('calc in ',sys._getframe().f_code.co_name)
             self.calcEnergiesForces()        
         return self.energies
         
@@ -395,7 +395,7 @@ class MdImage(Atoms,Image):
         '''
         self.set_pos_cell()
         if self.isNewStep:
-            print('calc in ',sys._getframe().f_code.co_name)
+            # print('calc in ',sys._getframe().f_code.co_name)
             self.calcEnergiesForces()        
         return self.forces
 

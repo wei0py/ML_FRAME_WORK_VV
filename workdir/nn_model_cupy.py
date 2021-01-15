@@ -58,10 +58,10 @@ class EiNN_cupy:
         return 
 
     def sigmoid(self, x):
-        return 1.0 /(1.0 +cp.exp(-x))
+        return (cp.where(x>= -150, 1.0 /(1.0 +cp.exp(-x)), 0.0))
 
     def softplus(self, x):
-        return cp.log(cp.exp(x)+1)
+        return (cp.where(x <= 150, cp.log(cp.exp(x)+1), x))
 
     def elup1(self, x):
         return(cp.where(x >= 0, x + 1, cp.exp(x)))

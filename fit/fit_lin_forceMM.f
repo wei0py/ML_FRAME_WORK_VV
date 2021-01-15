@@ -98,7 +98,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        stop
        endif
        do itype1=1,ntype
-       read(10,*) itype_t,rad_atom(itype1),
+       read(10,*) itype_t,rad_atom(itype1),E_ave_vdw,
      &            ((wp_atom(i,itype1,j1),i=1,ntype),j1=1,nterm)
        enddo
        close(10)

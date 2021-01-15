@@ -11,6 +11,7 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.md.verlet import VelocityVerlet
 from ase.md.nvtberendsen import NVTBerendsen as NVT
 from ase.md.nptberendsen import NPTBerendsen as NPT
+from ase.optimize import BFGS
 from ase import units
 
 from data_scaler import DataScalers
@@ -73,13 +74,6 @@ class MdRunner():
         else:
             raise NotImplementedError("Only allow redistribute velocities and apply MaxwellBoltzmannDistribution!")
         
-        if runModel.lower()=='nve':
-            self.dyn=VelocityVerlet(self.atoms,stepTime*units.fs)
-        elif runModel.lower()=='nvt':
-            self.dyn=NVT(self.atoms,stepTime*units.fs,endTemperature,nvtTaut*units.fs)
-        elif runModel.lower()=='npt':
-            self.dyn=NPT(self.atoms,stepTime*units.fs,endTemperature,nvtTaut*units.fs,pressure=1.01325,taup=1.0*1000*units.fs, compressibility=4.57e-5)
-
         self.isProfile=isProfile
         self.name=os.path.basename(self.dir)    
         self.logFilePath=os.path.join(self.mdDir,self.name+'_log.txt')
@@ -91,6 +85,17 @@ class MdRunner():
         self.trajInterval=trajInterval
         self.logInterval=logInterval
         self.newMovementInterval=newMovementInterval
+
+        if runModel.lower()=='nve':
+            self.dyn=VelocityVerlet(self.atoms,stepTime*units.fs)
+        elif runModel.lower()=='nvt':
+            self.dyn=NVT(self.atoms,stepTime*units.fs,endTemperature,nvtTaut*units.fs)
+        elif runModel.lower()=='npt':
+            self.dyn=NPT(self.atoms,stepTime*units.fs,endTemperature,nvtTaut*units.fs,pressure=1.01325,taup=1.0*1000*units.fs, compressibility=4.57e-5)
+        elif runModel.lower()=='opt':
+            self.dyn=BFGS(self.atoms,trajectory=os.path.join(self.mdDir,self.name+'.traj'))
+
+        
         
         if (not isTrajAppend) and os.path.exists(self.trajFilePath):
             os.remove(self.trajFilePath)
@@ -136,6 +141,12 @@ class MdRunner():
 
             #if self.currentStepNum%self.newMovementInterval==0:
             #    self.atoms.toTrainMovement(self.newMovementPath,True)
+    def runOPT(self,fmax=0.05,steps=10000):
+
+        self.dyn.run(fmax=fmax,steps=steps)
+        # if self.currentStepNum%self.trajInterval==0:
+        self.atoms.set_positions(self.atoms.get_positions(wrap=True))
+        self.atoms.toAtomConfig(self.newMovementPath,True)
 
     
     def final(self):

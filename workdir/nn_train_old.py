@@ -19,8 +19,6 @@ if pm.progressbar:
     import progressbar
 
 from read_dfeatNN import read_dfeatnn
-from read_all import read_allnn
-from convert_dfeat import convert_dfeat
 
 class Trainer(NNapiBase):
     """
@@ -54,12 +52,7 @@ class Trainer(NNapiBase):
         #self.optFi  = tf.train.AdadeltaOptimizer(learning_rate)
         #self.optFi  = tf.train.RMSPropOptimizer(learning_rate)
         self.optFi_op = self.optFi.minimize(self.lossEF)
-        print('ini')
         read_dfeatnn.read_wp(pm.fitModelDir,pm.ntypes)
-        print('fini')
-        print(read_dfeatnn.wp_atom)
-        read_allnn.read_wp(pm.fitModelDir,pm.ntypes)
-        print(read_allnn.wp_atom)
 
     #===========================================================================
     
@@ -235,59 +228,6 @@ class Trainer(NNapiBase):
         # itypes,feat,engy = r_feat_csv(f_train_feat) #TODO:
         # feat_scaled = self.ds.pre_feat(feat, itypes)
         # engy_scaled = self.ds.pre_engy(engy, itypes)
-        itype_atom=np.asfortranarray(np.array(pm.atomType).transpose())
-        # print('b')
-        
-        dfeatdirs = {}
-        # print('readwp all')
-        energy_all={}
-        force_all={}
-        feat_all={}
-        # num_neigh_all={}
-        list_neigh_all={}
-        iatom_all={}
-        dfeat_tmp_all={}
-        num_tmp_all={}
-        iat_tmp_all={}
-        jneigh_tmp_all={}
-        ifeat_tmp_all={}
-        flag=0
-        for m in pm.use_Ftype:
-            dfeatdirs[m] = np.unique(pd.read_csv(f_train_dfeat+str(m), header=None).values[:,0]) #TODO:
-
-            for k in dfeatdirs[m]:
-                print(k)
-                
-                read_allnn.read_dfeat(k,itype_atom)
-                # print('read_all dfeat')
-                if flag == 0:
-                    energy_all[k]=np.array(read_allnn.energy_all)
-                    print(energy_all[k])
-                    # np.savetxt(k+'engy1.txt',energy_all[k])
-                    force_all[k]=np.array(read_allnn.force_all)
-                    # np.savetxt(k+'fors1.txt',force_all[k].reshape(-1,3))
-                    # num_neigh_all[k]=read_allnn.num_neigh_all
-                    list_neigh_all[k]=np.array(read_allnn.list_neigh_all)
-                    iatom_all[k]=np.array(read_allnn.iatom)
-                    
-                feat_all[k]=np.array(read_allnn.feat_all)               
-                # dfeat_tmp_all[k]=read_allnn.dfeat_tmp_all
-                dfeat_tmp_all[k]=np.array(read_allnn.dfeat_tmp_all).astype(float)
-                num_tmp_all[k]=np.array(read_allnn.num_tmp_all).astype(int)
-                # print(num_tmp_all[k][10])
-                iat_tmp_all[k]=np.array(read_allnn.iat_tmp_all).astype(int)
-                jneigh_tmp_all[k]=np.array(read_allnn.jneigh_tmp_all).astype(int)
-                ifeat_tmp_all[k]=np.array(read_allnn.ifeat_tmp_all).astype(int)
-                # iat_tmp_all[k]=read_allnn.iat_tmp_all
-                # jneigh_tmp_all[k]=read_allnn.jneigh_tmp_all
-                # ifeat_tmp_all[k]=read_allnn.ifeat_tmp_all
-                # print(iat_tmp_all[k][:,10])
-                # print(jneigh_tmp_all[k][:,10])
-                # print(ifeat_tmp_all[k][:,10])
-                # print(dfeat_tmp_all[k])
-
-                read_allnn.deallo()
-            flag=flag+1
 
         dfeat_names = {}
         image_nums = {}
@@ -363,63 +303,26 @@ class Trainer(NNapiBase):
                     for mm in pm.use_Ftype:
                         dfeat_name[mm] = dfeat_names[mm][rndind[nextImg+i]]
                         image_num[mm] = image_nums[mm][rndind[nextImg+i]]
-                        # pos_num[mm] = pos_nums[mm][rndind[nextImg+i]]
-                        
+                        pos_num[mm] = pos_nums[mm][rndind[nextImg+i]]
+                        itype_atom=np.asfortranarray(np.array(pm.atomType).transpose())
                         # wp_atom=np.asfortranarray(np.array(pm.fortranFitAtomRepulsingEnergies).transpose())
                         # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
-                        # print(dfeat_name[mm])
-                        # print(np.array(feat_all[dfeat_name[mm]]).shape)
-                        # print(image_num[mm])
-                        # read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom)
+                        read_dfeatnn.read_dfeat(dfeat_name[mm],image_num[mm],pos_num[mm],itype_atom)
 
-                        # feat_tmp1=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
-                        # np.savetxt('feat1.txt',feat_tmp1)
-                        
-                        # dfeat_tmp1=np.array(read_dfeatnn.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)
-                        # np.savetxt('dfeat1.txt',dfeat_tmp1.reshape(-1,1))
+                        feat_tmp=np.array(read_dfeatnn.feat).transpose().astype(pm.tf_dtype)
 
-                        feat_tmp=feat_all[dfeat_name[mm]][:,:,image_num[mm]-1].transpose().astype(pm.tf_dtype)
-                        # np.savetxt('feat.txt',feat_tmp)
-                        natom=feat_tmp.shape[0]
-                        nfeat0m=feat_tmp.shape[1]
-                        m_neigh=pm.maxNeighborNum
-                        # init=pm.use_Ftype[0]
-                        # init_name=dfeat_names[init][rndind[nextImg+i]]
-                        # print(init_name)
-                        dfeat_tmp=np.asfortranarray(dfeat_tmp_all[dfeat_name[mm]][:,:,image_num[mm]-1])
-                        jneigh_tmp=np.asfortranarray(jneigh_tmp_all[dfeat_name[mm]][:,image_num[mm]-1])
-                        ifeat_tmp=np.asfortranarray(ifeat_tmp_all[dfeat_name[mm]][:,image_num[mm]-1])
-                        iat_tmp=np.asfortranarray(iat_tmp_all[dfeat_name[mm]][:,image_num[mm]-1])
-                        # print(iat_tmp)
-                        # print(jneigh_tmp)
-                        # print(ifeat_tmp)
-                        convert_dfeat.conv_dfeat(image_num[mm],nfeat0m,natom,m_neigh,num_tmp_all[dfeat_name[mm]][image_num[mm]-1],dfeat_tmp,jneigh_tmp,ifeat_tmp,iat_tmp)
-                        # convert_dfeat.conv_dfeat(image_num[mm],nfeat0m,natom,m_neigh,num_tmp_all[dfeat_name[mm]][image_num[mm]-1],dfeat_tmp_all[dfeat_name[mm]],jneigh_tmp_all[dfeat_name[mm]],ifeat_tmp_all[dfeat_name[mm]],iat_tmp_all[dfeat_name[mm]])
-                        # print('convaf')
-                        # feat_tmp=np.array(convert_dfeat.feat).transpose().astype(pm.tf_dtype)
-
-                        dfeat_tmp=np.array(convert_dfeat.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)
-                        # np.savetxt('dfeat.txt',dfeat_tmp.reshape(-1,1))
-                        # read_dfeatnn.deallo()
+                        dfeat_tmp=np.array(read_dfeatnn.dfeat).transpose(1,2,0,3).astype(pm.tf_dtype)
                         if kk==0:
                             feat=feat_tmp
                             dfeat=dfeat_tmp
-                            # fors = np.array(convert_dfeat.force).transpose().astype(pm.tf_dtype)
-                            # nblist = np.array(convert_dfeat.list_neigh).transpose().astype(int)
-                            # engy=np.array(convert_dfeat.energy).reshape((-1,1)).astype(pm.tf_dtype)
-                            # itypes=np.array(convert_dfeat.iatom).transpose().astype(int)
-                            fors = force_all[dfeat_name[mm]][:,:,image_num[mm]-1].transpose().astype(pm.tf_dtype)
-                            # np.savetxt('fors.txt',fors)
-                            nblist = list_neigh_all[dfeat_name[mm]][:,:,image_num[mm]-1].transpose().astype(int)
-                            # np.savetxt('nblist.txt',nblist)
-                            engy=energy_all[dfeat_name[mm]][:,image_num[mm]-1].reshape((-1,1)).astype(pm.tf_dtype)
-                            # np.savetxt('engy.txt',engy)
-                            itypes=iatom_all[dfeat_name[mm]][:].transpose().astype(int)
-                            # np.savetxt('itypes.txt',itypes)
+                            fors = np.array(read_dfeatnn.force).transpose().astype(pm.tf_dtype)
+                            nblist = np.array(read_dfeatnn.list_neigh).transpose().astype(int)
+                            engy=np.array(read_dfeatnn.energy).reshape((-1,1)).astype(pm.tf_dtype)
+                            itypes=np.array(read_dfeatnn.iatom).transpose().astype(int)
                         else:
                             feat=np.concatenate((feat,feat_tmp),axis=1)
                             dfeat=np.concatenate((dfeat,dfeat_tmp),axis=2)
-                        convert_dfeat.deallo()
+                        read_dfeatnn.deallo()
                         kk=kk+1
                     feat_scaled_bat.append(self.ds.pre_feat(feat,itypes))
                     engy_scaled_bat.append(self.ds.pre_engy(engy, itypes))

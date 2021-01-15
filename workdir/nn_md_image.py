@@ -348,7 +348,7 @@ class MdImage(Atoms,Image,NNapiBase):
         
         feat,dfeat,list_neigh,num_neigh=self.calc_feat()
         # print(cell)
-        print("cal feat time: ",time.time()-start)
+        # print("cal feat time: ",time.time()-start)
         # print(pos)
         # print(np.shape(dfeat))
         # start2=time.time()
@@ -373,7 +373,7 @@ class MdImage(Atoms,Image,NNapiBase):
         # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
         iatom_type=np.zeros_like(itype)
         for m in range(len(itype)):
-            iatom_type[m]=pm.atomType.index(itype[m])
+            iatom_type[m]=pm.atomType.index(itype[m])+1
         iatom_type=np.asfortranarray(iatom_type.transpose())
 
 
@@ -468,7 +468,7 @@ class MdImage(Atoms,Image,NNapiBase):
             self.calcForceTime+=time.time()-start
             print(self.calcFeatTime,self.calcForceTime)
         
-    def get_potential_energy(self):
+    def get_potential_energy(self,force_consistent=False):
         
         self.set_pos_cell()
         if self.isNewStep:
@@ -525,7 +525,7 @@ class MdImage(Atoms,Image,NNapiBase):
         # rad_atom=np.asfortranarray(np.array(pm.fortranFitAtomRadii).transpose())
         iatom_type=np.zeros_like(itype)
         for m in range(len(itype)):
-            iatom_type[m]=pm.atomType.index(itype[m])
+            iatom_type[m]=pm.atomType.index(itype[m])+1
         iatom_type=np.asfortranarray(iatom_type.transpose())
 
 

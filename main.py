@@ -113,11 +113,13 @@ if pm.isFitLinModel:
 if pm.isRunMd:
     # import preparatory_work as ppw
     from md_runner import MdRunner
-    # if not pm.isCalcFeat:
-    #     ppw.preparatoryWorkForMdImage()
+
     mdRunner=MdRunner()
-    for i in range(pm.mdStepNum):
-        mdRunner.runStep()
+    if pm.mdRunModel=='opt':
+        mdRunner.runOPT(fmax=pm.mdOptfmax,steps=pm.mdOptsteps)
+    else:
+        for i in range(pm.mdStepNum):
+            mdRunner.runStep()
     mdRunner.final()
 
 if pm.isRunMd_nn:
@@ -127,7 +129,44 @@ if pm.isRunMd_nn:
     # if not pm.isCalcFeat:
     #     ppw.preparatoryWorkForMdImage()
     mdRunner=MdRunner()
-    for i in range(pm.mdStepNum):
-        mdRunner.runStep()
+    if pm.mdRunModel=='opt':
+        mdRunner.runOPT(fmax=pm.mdOptfmax,steps=pm.mdOptsteps)
+    else:
+        for i in range(pm.mdStepNum):
+            mdRunner.runStep()
+    mdRunner.final()
+
+if pm.isRunMd100:
+    os.environ["CUDA_VISIBLE_DEVICES"] = pm.cuda_dev
+    # import preparatory_work as ppw
+    from md_run100 import MdRunner
+    # if not pm.isCalcFeat:
+    #     ppw.preparatoryWorkForMdImage()
+    mdRunner=MdRunner()
+    movementPath=os.path.join(pm.mdImageFileDir,'MOVEMENT')
+    with open(movementPath,'r') as sourceFile:
+        allData=sourceFile.read()
+        nimage=allData.count('Iteration')
+        # for imageIndex in range(nimage):
+            
+    for i in range(nimage):
+        mdRunner.run100(i)
+    mdRunner.final()
+
+if pm.isRunMd100_nn:
+    os.environ["CUDA_VISIBLE_DEVICES"] = pm.cuda_dev
+    # import preparatory_work as ppw
+    from nn_md_run100 import MdRunner
+    # if not pm.isCalcFeat:
+    #     ppw.preparatoryWorkForMdImage()
+    mdRunner=MdRunner()
+    movementPath=os.path.join(pm.mdImageFileDir,'MOVEMENT')
+    with open(movementPath,'r') as sourceFile:
+        allData=sourceFile.read()
+        nimage=allData.count('Iteration')
+        # for imageIndex in range(nimage):
+            
+    for i in range(nimage):
+        mdRunner.run100(i)
     mdRunner.final()
 

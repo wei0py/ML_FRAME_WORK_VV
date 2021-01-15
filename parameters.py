@@ -9,7 +9,8 @@ isRunMd=False                                   #是否训练运行md  default:F
 isRunMd_nn=False
 isFollowMd=False                                #是否是接续上次的md继续运行  default:False
 isFitVdw=False
-
+isRunMd100_nn=False
+isRunMd100=False
 #************** Dir **********************
 codedir='/home/buyu/MLFF/new-repulsive/ML_FRAME_WORK_vdw/workdir'
 trainSetDir='/home/buyu/MLFF/AlHcomb'
@@ -24,6 +25,8 @@ PWmatDir='/home/buyu/PWmat/MDAlHsml3_loop'
 #isFitLinModel=True
 #isRunMd=True
 isRunMd_nn=True
+#isRunMd100_nn=False
+#isRunMd100=False
 isFollowMd=False                                #是否是接续上次的md继续运行  default:False
 add_force=False           # for NN md
 #********* for gen_feature.in *********************
@@ -91,12 +94,14 @@ fortranFitRidgePenaltyTerm=0.0001               #fortran fitting时最后岭回�
 
 #以下部分为md设置的参数 
 mdCalcModel='lin'                               #运行md时，计算energy和force所用的fitting model，‘lin' or 'vv'
-mdRunModel='nvt'                                #md运行时的模型,'nve' or 'nvt' or 'npt', default:'nve'
+mdRunModel='nvt'                                #md运行时的模型,'nve' or 'nvt' or 'npt' or 'opt', default:'nve'
 mdStepNum=400                                  #md运行的步数,default:1000
 mdStepTime=1                                  #md运行时一步的时长(fs), default:1.0
 mdStartTemperature=300                          #md运行时的初始温度
 mdEndTemperature=300                            #md运行采用'nvt'模型时，稳定温度(or npt)
 mdNvtTaut=0.1*1000                               #md运行采用'nvt'模型时，Berendsen温度对的时间常数 (or npt)
+mdOptfmax=0.05
+mdOptsteps=1000
 
 isTrajAppend=False                              #traj文件是否采用新文件还是接续上次的文件  default:False
 isNewMovementAppend=False                       #md输出的movement文件是采用新文件还是接续上次的文件  default:False

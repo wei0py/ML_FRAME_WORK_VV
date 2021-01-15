@@ -4,11 +4,13 @@ CALCLINSRC=calc_lin_forceM_module.f90
 MDVV=md_VV.f90
 DFEAT=read_dfeatNN.f90
 CALCREP=calc_replusive.f90
+READALL=read_all.f90
+CONVDFEAT=convert_dfeat.f90
 
 .PHONY: py
 
 
-py: ../calc_ftype1.so ../calc_ftype2.so ../calc_lin.so ../calc_vv.so ../read_dfeatNN.so ../calc_rep.so
+py: ../calc_ftype1.so ../calc_ftype2.so ../calc_lin.so ../calc_vv.so ../read_dfeatNN.so ../calc_rep.so ../read_all.so ../convert_dfeat.so
 
 
 ../calc_ftype1.so: $(CALCFTYPE1)
@@ -34,3 +36,11 @@ py: ../calc_ftype1.so ../calc_ftype2.so ../calc_lin.so ../calc_vv.so ../read_dfe
 ../calc_rep.so: $(CALCREP)
 	python3 -m numpy.f2py -c -m calc_rep --fcompiler=intelem --compiler=intelem -L$MKLROOT/lib/intel64/ -lmkl_rt $(CALCREP)
 	mv calc_rep.cpython-36m-x86_64-linux-gnu.so ../calc_rep.so
+
+../read_all.so: $(READALL)
+	python3 -m numpy.f2py -c -m read_all --fcompiler=intelem --compiler=intelem -L$MKLROOT/lib/intel64/ -lmkl_rt $(READALL)
+	mv read_all.cpython-36m-x86_64-linux-gnu.so ../read_all.so
+
+../convert_dfeat.so: $(CONVDFEAT)
+	python3 -m numpy.f2py -c -m convert_dfeat --fcompiler=intelem --compiler=intelem -L$MKLROOT/lib/intel64/ -lmkl_rt $(CONVDFEAT)
+	mv convert_dfeat.cpython-36m-x86_64-linux-gnu.so ../convert_dfeat.so
